@@ -1,0 +1,2 @@
+class PrivateAccountException(Exception):
+    pass

@@ -1,0 +1,8 @@
+.env
+node_link.json
+NOTES.txt
+# app/config.ini
+app/notes
+app/data
+*.pyc
+__pycache__

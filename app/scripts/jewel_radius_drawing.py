@@ -1,0 +1,473 @@
+import math
+import json
+from typing import List, Dict
+import copy
+import logging
+# from app.scripts.poll_character import Jewel
+import app.scripts.get_jewel_effects as je
+from app.scripts.classes import Vertex, NodeTooltip, Node, DrawingRoot, StraightEdge, CurvedEdge, Jewel
+from app.util.parse_jewel import ParsedJewel
+TREE_FILE = 'app/data/tree.json'
+RELEVANT_NODE_TYPES = ['keystone', 'notable', 'small_passive', 'jewel_socket']
+
+logger = logging.getLogger('main')
+
+
+class JewelDrawing():
+    """
+    Encompasses everything required to generate a json definition of how to draw the nodes and edges
+    of a particular jewel socket for a particular character.
+    """
+
+    def __init__(self):
+        self._TREE_DATA = None
+        self.TIMELESS_JEWEL_RADIUS = 1800
+
+    @property
+    def tree_data(self):
+        # TODO - I think I want to save the tree data in the db later on
+        if not self._TREE_DATA:
+            with open(TREE_FILE, 'r') as tree_file:
+                self._TREE_DATA = json.load(tree_file)
+
+        return self._TREE_DATA
+
+    def node_type(self, node_obj) -> str:
+        if not node_obj.get('group'):
+            return 'cluster_passive'
+        elif node_obj.get('isKeystone'):
+            return 'keystone'
+        elif node_obj.get('isNotable'):
+            return 'notable'
+        elif node_obj.get('isJewelSocket'):
+            return 'jewel_socket'
+        elif node_obj.get('isMastery'):
+            return 'mastery'
+        elif node_obj.get('ascendancyName') is not None:
+            return 'ascendancy'
+        elif node_obj.get('isBlighted'):
+            return 'blight'
+        # root node
+        elif node_obj['group'] == 0:
+            return 'root'
+        else:
+            return 'small_passive'
+
+    def node_is_in_jewel_radius(self, n: Vertex, j: Vertex, radius):
+        xComponent = (n.x - j.x) ** 2
+        yComponent = (n.y - j.y) ** 2
+        return math.sqrt(xComponent + yComponent) <= radius
+
+    def get_passive_coords(self, passive: int) -> Vertex:
+        group_idx = self.tree_data['nodes'][str(passive)]['group']
+        gX, gY = self.tree_data['groups'][str(group_idx)]['x'], self.tree_data['groups'][str(group_idx)]['y']
+        pOrbit = self.tree_data['nodes'][str(passive)]['orbit']
+        pOrbitIndex = self.tree_data['nodes'][str(passive)]['orbitIndex']
+        pOrbitRadius = self.tree_data['constants']['orbitRadii'][pOrbit]
+        skillsPerOrbit = self.tree_data['constants']['skillsPerOrbit'][pOrbit]
+
+        angle = math.radians(pOrbitIndex * (360 / skillsPerOrbit))
+        # convert angle to our new cursed paradigm
+        angle = angle - math.radians(90)
+
+        pX = (math.cos(angle) * pOrbitRadius) + gX
+        pY = (math.sin(angle) * pOrbitRadius) + gY
+
+        return Vertex(pX, pY)
+
+    def make_node_objs(self, passive_types: List[str]) -> Dict[int, Node]:
+
+        output = {}
+        nodes_json = self.tree_data['nodes']
+        for node in nodes_json.values():
+            if self.node_type(node) not in passive_types:
+                continue
+
+            group = self.tree_data['groups'][str(node['group'])]
+            output[int(node['skill'])] = self.make_node(node, group)
+
+        return output
+
+    def make_node(self, node: dict, group: dict):
+        return Node(
+            name=node['name'],
+            node_id=int(node['skill']),
+            node_type=self.node_type(node),
+            absolute_coords=self.get_passive_coords(node['skill']),
+            relative_coords=None,
+            mods=node.get('stats'),
+            reminder=node.get('reminderText'),
+            orbit=node['orbit'],
+            orbitRadius=self.tree_data['constants']['orbitRadii'][node['orbit']],
+            orbitIndex=node['orbitIndex'],
+            connected_nodes=node['out'] + node['in'],
+            group_id=node['group'],
+            group_absolute_coords=Vertex(group['x'],
+                                         group['y']),
+            group_relative_coords=None,
+            tooltip=None
+        )
+
+    def make_jewel_objs(self) -> Dict[int, DrawingRoot]:
+
+        output = {}
+        jewel_sockets = self.tree_data['jewelSlots']
+        nodes_json = self.tree_data['nodes']
+
+        for i, jewel in enumerate(jewel_sockets):
+            try:
+                name = nodes_json[str(jewel)]['name']
+                if 'Medium' in name or 'Small' in name:
+                    continue
+
+                absolute_coords = self.get_passive_coords(jewel)
+                output[jewel] = DrawingRoot(
+                    jewel_id=jewel,
+                    api_idx=i,
+                    jewel_coords=absolute_coords,
+                    radius=self.TIMELESS_JEWEL_RADIUS,
+                    nodes={},
+                    edges=[]
+                )
+            except KeyError:
+                continue
+
+        return output
+
+    def build_jewel_to_nodes_in_radius_map(self) -> Dict[int, DrawingRoot]:
+        nodes = self.make_node_objs(RELEVANT_NODE_TYPES)
+        jewels = self.make_jewel_objs()
+
+        output = {}
+        for jewel in jewels.values():
+            for node in nodes.values():
+                if not self.node_is_in_jewel_radius(node.absolute_coords,
+                                                    jewel.jewel_coords,
+                                                    self.TIMELESS_JEWEL_RADIUS):
+                    continue
+
+                if output.get(jewel.jewel_id) is None:
+                    output[jewel.jewel_id] = copy.deepcopy(jewel)
+
+                output[jewel.jewel_id].nodes[node.node_id] = copy.deepcopy(node)
+
+                # apply relative coords
+                if node.node_id != jewel.jewel_id:
+                    output[jewel.jewel_id].nodes[node.node_id].relative_coords = \
+                        node.absolute_coords - jewel.jewel_coords
+                else:
+                    output[jewel.jewel_id].nodes[node.node_id].relative_coords = Vertex(0, 0)
+
+                # update group with relative coords
+                group_absolute_coords = output[jewel.jewel_id].nodes[node.node_id].group_absolute_coords
+                output[jewel.jewel_id].nodes[node.node_id].group_relative_coords = \
+                    group_absolute_coords - jewel.jewel_coords
+
+        return output
+
+    def adjust_orbit_index(self, index, maxOrbits):
+        three_o_clock = math.ceil(maxOrbits / 4)
+        if index < math.ceil(three_o_clock):
+            index += maxOrbits
+
+        index -= math.ceil(three_o_clock)
+        return index
+
+    def index_dist(self, a: int, b: int, m: int):
+        return min(abs(a - b),
+                   abs(a - (b + m)),
+                   abs((a + m) - b))
+
+    def calc_arc_len(self, a: Node, b: Node, r: float, maxOrbits: int) -> float:
+        i_dist = self.index_dist(a.orbitIndex, b.orbitIndex, maxOrbits)
+        angle = 360 * (i_dist / maxOrbits)
+        print(f'Angle between nodes {a.name} and {b.name} is {angle} degrees')
+        arc_len = math.radians(angle) * r
+        print(f'Orbit radius between nodes {a.name} and {b.name} is {r}')
+        return arc_len
+
+    def calc_angle(self, a: Node, b: Node, r: float, maxOrbits: int) -> float:
+        i_dist = self.index_dist(a.orbitIndex, b.orbitIndex, maxOrbits)
+        angle = 360 * (i_dist / maxOrbits)
+        return angle
+
+    def calc_arc_rotation(self, orbitIndexA: int, orbitIndexB: int, maxOrbits: int, preserve_order=False) -> float:
+        """ Konva's arcs behave similarly to the 'orbit' system on the PoE tree in the sense that they rotate clockwise.
+            However, they always begin at 3 o-clock. This means we need to find the amount to rotate the arc by
+            after drawing it.
+
+            We can do this by establishing one of the nodes as the 'start' of the arc by finding the earlier orbitIndex.
+            The PoE orbit indices start at 12 o-clock, though, so we need to account for that as well.
+        """
+
+        # make both indices 0-indexed off of the 3 o-clock position
+        a = self.adjust_orbit_index(orbitIndexA, maxOrbits)
+        b = self.adjust_orbit_index(orbitIndexB, maxOrbits)
+
+        def measure_clockwise_dist(a, b, max):
+            dist = 0
+            pos = a
+            while pos != b:
+                if pos >= max:
+                    pos = 0
+                else:
+                    pos += 1
+                dist += 1
+
+            return dist
+
+        a_to_b = measure_clockwise_dist(a, b, maxOrbits)
+        b_to_a = measure_clockwise_dist(b, a, maxOrbits)
+
+        start_index = None
+        if a_to_b < b_to_a:
+            start_index = a
+        elif a_to_b > b_to_a:
+            start_index = b
+        elif a_to_b == b_to_a:
+            # god willing this never happens because this is arbitrary
+            start_index = min(a, b)
+
+        # find the rotation from arc start
+        rotation = 360 * (start_index / maxOrbits)
+        return rotation
+
+    def make_straight_edge(self, start_node: Node, end_node: Node) -> StraightEdge:
+        """
+        Spec for an edge:
+            {
+                ?ends: [
+                    {
+                        'absX': 12345,
+                        'absY': 12345,
+                        'relX': 12345,
+                        'relY': 12345
+                    },
+                    {
+                        'absX': 23456,
+                        'absY': 23456,
+                        'relX': 12345,
+                        'relY': 12345
+                    }
+                ]
+                ?orbitCenter: {
+                    'absX': 12345,
+                    'absY': 12345,
+                    'relX': 12345,
+                    'relY': 12345
+                },
+                ?orbitRadius: 12345
+            }
+        """
+        edge = StraightEdge(
+            start=start_node.node_id,
+            end=end_node.node_id,
+            edge_type='StraightEdge',
+            ends=[
+                {
+                    'absolute': start_node.absolute_coords,
+                    'relative': start_node.relative_coords
+                },
+                {
+                    'absolute': end_node.absolute_coords,
+                    'relative': end_node.relative_coords
+                }
+            ]
+        )
+        return edge
+
+    def make_curved_edge(self, start_node: Node, end_node: Node, max_orbits: int):
+        edge = CurvedEdge(
+            start=start_node.node_id,
+            end=end_node.node_id,
+            edge_type='CurvedEdge',
+            absolute_center=start_node.group_absolute_coords,
+            relative_center=start_node.group_relative_coords,
+            rotation=self.calc_arc_rotation(start_node.orbitIndex,
+                                            end_node.orbitIndex,
+                                            max_orbits, True),
+            arc_len=self.calc_arc_len(start_node, end_node, start_node.orbitRadius, max_orbits),
+            radius=start_node.orbitRadius,
+            angle=self.calc_angle(start_node, end_node, start_node.orbitRadius, max_orbits)
+        )
+        return edge
+
+    def make_pre_transform_drawing(self, api_jewel_id: int, allocated_hashes: List[int]) -> dict:
+        j_map = self.build_jewel_to_nodes_in_radius_map()
+
+        output_obj = None
+        for jewel_obj in j_map.values():
+            if jewel_obj.api_idx == api_jewel_id:
+                output_obj = jewel_obj
+                break
+
+        output_obj.edges = []
+
+        # identify all edges we need to make
+        edge_objects = []
+        traversed_edges = set()
+        traversed_nodes = set()
+
+        def traverse(node_idx: int):
+            try:
+                traversed_nodes.add(node_idx)
+                connected_nodes = set(list(int(x) for x in output_obj.nodes.get(node_idx).connected_nodes))
+                connected_nodes = list(connected_nodes & set(allocated_hashes))
+            except KeyError:
+                # node_idx was outside of radius which means it's time to stop traversing
+                return
+
+            for connected_node in connected_nodes:
+                # exclude masteries
+                if self.node_type(self.tree_data['nodes'][str(connected_node)]) not in RELEVANT_NODE_TYPES:
+                    continue
+
+                # has this edge already been processed?
+                if (node_idx, connected_node) in traversed_edges \
+                   or (connected_node, node_idx) in traversed_edges:
+                    continue
+
+                # mark it as traversed
+
+                # if the connected node is in radius, we keep traversing
+                if output_obj.nodes.get(connected_node) is not None:
+                    end_node = output_obj.nodes[connected_node]
+                else:
+                    # node is outside the radius which means we need to get its coord details
+                    node_json = self.tree_data['nodes'][str(connected_node)]
+                    group_id = self.tree_data['nodes'][str(connected_node)]['group']
+                    group = self.tree_data['groups'][str(group_id)]
+                    nCoords = self.get_passive_coords(int(node_json['skill']))
+                    jX, jY = output_obj.jewel_coords.x, output_obj.jewel_coords.y
+
+                    end_node = self.make_node(node_json, group)
+                    end_node.relative_coords = Vertex(nCoords.x - jX, nCoords.y - jY)
+                    end_node.group_relative_coords = Vertex(group['x'] - jX, group['y'] - jY)
+
+                start_node = output_obj.nodes[node_idx]
+
+                # nodes are in same group and orbit
+                if start_node.group_id == end_node.group_id and start_node.orbit == end_node.orbit:
+                    edge = self.make_curved_edge(start_node,
+                                                 end_node,
+                                                 self.tree_data['constants']['skillsPerOrbit'][start_node.orbit])
+                else:
+                    edge = self.make_straight_edge(start_node, end_node)
+
+                edge_objects.append(edge)
+                traversed_edges.add((node_idx, connected_node))
+                if output_obj.nodes.get(connected_node) is not None:
+                    traverse(connected_node)
+
+        traverse(jewel_obj.jewel_id)
+
+        # wrap up any remaining nodes that didn't get covered by the initial traversal
+        remaining_nodes = (set(jewel_obj.nodes.keys()) & set(allocated_hashes)) - traversed_nodes
+        for node_idx in remaining_nodes:
+            traverse(node_idx)
+
+        jewel_obj.edges = edge_objects
+
+        # finally filter out all nodes that aren't allocated
+        jewel_obj.nodes = {k: v for k, v in jewel_obj.nodes.items() if v.node_id in allocated_hashes}
+        return jewel_obj
+
+    def make_tooltip(self, node: Node, change_data: dict, replaced: bool) -> NodeTooltip:
+        if replaced:
+            return NodeTooltip(
+                title=change_data['dn'],
+                body=change_data['sd'],
+                replaced_title=node.name
+            )
+        else:
+            return NodeTooltip(
+                title=node.name,
+                body=node.mods + change_data['sd'],
+                replaced_title=None
+            )
+
+    def make_timeless_jewel_tooltip(self, timeless_jewel: ParsedJewel) -> NodeTooltip:
+        conquered_str = 'Passives in radius are Conquered by the '
+        if timeless_jewel.jewel_type == 'Glorious Vanity':
+            main_string = f'Bathed in the blood of {timeless_jewel.seed} sacrificed in the name of {timeless_jewel.general}'
+            conquered_str += 'Vaal'
+        elif timeless_jewel.jewel_type == 'Elegant hubris':
+            main_string = f'Commissioned {timeless_jewel.seed} coins to commemorate {timeless_jewel.general}'
+            conquered_str += 'Eternal Empire'
+        elif timeless_jewel.jewel_type == 'Militant Faith':
+            main_string = f'Carved to glorify {timeless_jewel.seed} new faithful converted by High Templar {timeless_jewel.general}'
+            conquered_str += 'Templars'
+        elif timeless_jewel.jewel_type == 'Lethal Pride':
+            main_string = f'Commanded leadership over {timeless_jewel.seed} warriors under {timeless_jewel.general}'
+            conquered_str += 'Karui'
+        elif timeless_jewel.jewel_type == 'Brutal Restraint':
+            main_string = f'Denoted service of {timeless_jewel.seed} dekhara in the akhara of {timeless_jewel.general}'
+            conquered_str += 'Maraketh'
+        body = [main_string, conquered_str]
+        if timeless_jewel.mf_mods:
+            body += timeless_jewel.mf_mods
+        body += ['Historic']
+        return NodeTooltip(
+            title=timeless_jewel.jewel_type,
+            body=body,
+            replaced_title=None
+        )
+
+    def apply_jewel_changes(self, jewel_drawing: DrawingRoot, timeless_jewel: ParsedJewel) -> DrawingRoot:
+        """ Determines the changes that will apply to all nodes in the jewel, and applies them (as tooltips). """
+
+        converter = je.NodeLookup()
+        # first, the layups (keystone / small nodes)
+        keystone = converter.lookup_jewel_keystone(timeless_jewel.general)
+
+        for k, node in jewel_drawing.nodes.items():
+            logger.debug(f'Processing {node.name}, {node.node_id}')
+            if node.node_type == 'jewel_socket':
+                if node.node_id == jewel_drawing.jewel_id:
+                    # timeless jewel socket
+                    node.tooltip = self.make_timeless_jewel_tooltip(timeless_jewel)
+                else:
+                    # socket in radius
+                    node.tooltip = self.make_tooltip(node, {'sd': []}, False)
+            elif node.node_type == 'keystone':
+                node.tooltip = self.make_tooltip(node, keystone, True)
+
+            elif node.node_type == 'small_passive' and timeless_jewel.jewel_type != 'Glorious Vanity':
+                effect, replaced = converter.lookup_small_node(timeless_jewel.jewel_type, node)
+                node.tooltip = self.make_tooltip(node, effect, replaced)
+
+            elif node.node_type == 'notable' and timeless_jewel.jewel_type != 'Glorious Vanity':
+                effect, replaced = converter.lookup_notable_non_gv(timeless_jewel.jewel_type,
+                                                                   int(timeless_jewel.seed),
+                                                                   node)
+                
+                node.tooltip = self.make_tooltip(node, effect, replaced)
+            else:
+                # any node type and Glorious Vanity
+                effect, replaced = converter.fast_lookup_node_gv(int(timeless_jewel.seed),
+                                                                 node)
+                node.tooltip = self.make_tooltip(node, effect, replaced)
+
+        return jewel_drawing
+
+    def make_drawing(self, api_response: dict, jewel: ParsedJewel) -> DrawingRoot:
+        """ We need the api response for the list of allocated nodes and the jewel api id
+            (since we're not saving that one in the db).
+ 
+            Returns the full json that the frontend will need to draw a cutout of the passive tree.
+        """
+        logger.debug(f'Begin drawing for jewel: {jewel.jewel_type} {jewel.seed} {jewel.general}')
+        api_jewel_id = None
+        for k, v in api_response['jewel_data'].items():
+            if v['type'] == 'JewelTimeless':
+                api_jewel_id = int(k)
+                break
+        
+        allocated_hashes = api_response['hashes']
+
+        drawing = self.make_pre_transform_drawing(api_jewel_id, allocated_hashes)
+        logger.debug('Drawing base done.')
+        drawing = self.apply_jewel_changes(drawing, jewel)
+        logger.debug('Jewel changes applied.')
+
+        return drawing

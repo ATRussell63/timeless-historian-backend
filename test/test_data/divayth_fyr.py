@@ -1,0 +1,1143 @@
+DIVAYTH_FYR_API = {
+    "character": 5,
+    "ascendancy": 2,
+    "alternate_ascendancy": 0,
+    "hashes": [
+        238,
+        922,
+        1203,
+        4367,
+        5289,
+        5296,
+        5743,
+        6230,
+        7388,
+        7444,
+        7960,
+        9261,
+        9567,
+        10490,
+        10829,
+        10835,
+        11046,
+        11497,
+        11730,
+        12250,
+        12783,
+        12888,
+        12926,
+        13009,
+        13232,
+        13714,
+        14151,
+        14936,
+        15117,
+        16123,
+        16167,
+        16775,
+        16954,
+        17546,
+        17735,
+        18767,
+        19144,
+        19501,
+        20528,
+        20987,
+        21634,
+        21958,
+        22061,
+        22472,
+        22637,
+        24256,
+        24362,
+        25237,
+        25651,
+        26196,
+        26270,
+        26740,
+        27564,
+        28330,
+        28475,
+        29026,
+        29781,
+        29994,
+        30733,
+        31683,
+        32091,
+        32241,
+        33310,
+        33435,
+        33479,
+        34098,
+        34171,
+        34483,
+        34723,
+        34906,
+        35503,
+        36452,
+        36634,
+        36678,
+        36881,
+        38516,
+        38701,
+        39841,
+        40510,
+        41026,
+        41472,
+        41967,
+        42760,
+        44103,
+        44184,
+        44797,
+        45680,
+        46340,
+        46578,
+        46726,
+        46842,
+        46910,
+        47251,
+        48298,
+        49178,
+        49254,
+        50757,
+        51108,
+        51219,
+        52502,
+        53188,
+        55230,
+        55485,
+        55906,
+        56158,
+        57061,
+        57167,
+        58218,
+        58453,
+        60398,
+        60472,
+        61419,
+        63398,
+        63447,
+        63965,
+        63976,
+        64210,
+        65034
+    ],
+    "hashes_ex": [
+        1,
+        3,
+        5,
+        7,
+        9,
+        10,
+        11,
+        30,
+        32,
+        33,
+        34
+    ],
+    "mastery_effects": {
+        "53188": 12119,
+        "55230": 62252,
+        "50757": 57074,
+        "16123": 38070,
+        "32241": 34242,
+        "34723": 40307
+    },
+    "skill_overrides": {
+        "14151": {
+            "name": "Tattoo of the Valako Stormrider",
+            "icon": "Art/2DArt/SkillIcons/passives/LightningResistNode.png",
+            "activeEffectImage": "Art/2DArt/UIImages/InGame/AncestralTrial/PassiveTreeTattoos/ValakoTribePassiveBG.png",
+            "isTattoo": True,
+            "stats": [
+                "+6% to Lightning Resistance"
+            ]
+        },
+        "27564": {
+            "name": "Tattoo of the Valako Stormrider",
+            "icon": "Art/2DArt/SkillIcons/passives/LightningResistNode.png",
+            "activeEffectImage": "Art/2DArt/UIImages/InGame/AncestralTrial/PassiveTreeTattoos/ValakoTribePassiveBG.png",
+            "isTattoo": True,
+            "stats": [
+                "+6% to Lightning Resistance"
+            ]
+        },
+        "17735": {
+            "name": "Tattoo of the Valako Stormrider",
+            "icon": "Art/2DArt/SkillIcons/passives/LightningResistNode.png",
+            "activeEffectImage": "Art/2DArt/UIImages/InGame/AncestralTrial/PassiveTreeTattoos/ValakoTribePassiveBG.png",
+            "isTattoo": True,
+            "stats": [
+                "+6% to Lightning Resistance"
+            ]
+        },
+        "60398": {
+            "name": "Tattoo of the Valako Stormrider",
+            "icon": "Art/2DArt/SkillIcons/passives/LightningResistNode.png",
+            "activeEffectImage": "Art/2DArt/UIImages/InGame/AncestralTrial/PassiveTreeTattoos/ValakoTribePassiveBG.png",
+            "isTattoo": True,
+            "stats": [
+                "+6% to Lightning Resistance"
+            ]
+        },
+        "7388": {
+            "name": "Tattoo of the Valako Stormrider",
+            "icon": "Art/2DArt/SkillIcons/passives/LightningResistNode.png",
+            "activeEffectImage": "Art/2DArt/UIImages/InGame/AncestralTrial/PassiveTreeTattoos/ValakoTribePassiveBG.png",
+            "isTattoo": True,
+            "stats": [
+                "+6% to Lightning Resistance"
+            ]
+        },
+        "47251": {
+            "name": "Tattoo of the Valako Stormrider",
+            "icon": "Art/2DArt/SkillIcons/passives/LightningResistNode.png",
+            "activeEffectImage": "Art/2DArt/UIImages/InGame/AncestralTrial/PassiveTreeTattoos/ValakoTribePassiveBG.png",
+            "isTattoo": True,
+            "stats": [
+                "+6% to Lightning Resistance"
+            ]
+        },
+        "46340": {
+            "name": "Tattoo of the Valako Stormrider",
+            "icon": "Art/2DArt/SkillIcons/passives/LightningResistNode.png",
+            "activeEffectImage": "Art/2DArt/UIImages/InGame/AncestralTrial/PassiveTreeTattoos/ValakoTribePassiveBG.png",
+            "isTattoo": True,
+            "stats": [
+                "+6% to Lightning Resistance"
+            ]
+        },
+        "42760": {
+            "name": "Tattoo of the Valako Stormrider",
+            "icon": "Art/2DArt/SkillIcons/passives/LightningResistNode.png",
+            "activeEffectImage": "Art/2DArt/UIImages/InGame/AncestralTrial/PassiveTreeTattoos/ValakoTribePassiveBG.png",
+            "isTattoo": True,
+            "stats": [
+                "+6% to Lightning Resistance"
+            ]
+        },
+        "36678": {
+            "name": "Tattoo of the Valako Stormrider",
+            "icon": "Art/2DArt/SkillIcons/passives/LightningResistNode.png",
+            "activeEffectImage": "Art/2DArt/UIImages/InGame/AncestralTrial/PassiveTreeTattoos/ValakoTribePassiveBG.png",
+            "isTattoo": True,
+            "stats": [
+                "+6% to Lightning Resistance"
+            ]
+        },
+        "13009": {
+            "name": "Tattoo of the Ramako Shaman",
+            "icon": "Art/2DArt/SkillIcons/passives/SpellSuppresionNode.png",
+            "activeEffectImage": "Art/2DArt/UIImages/InGame/AncestralTrial/PassiveTreeTattoos/RamakoTribePassiveBG.png",
+            "isTattoo": True,
+            "stats": [
+                "+2% chance to Suppress Spell Damage"
+            ],
+            "reminderText": [
+                "(50% of Damage from Suppressed Hits and Ailments they inflict is prevented)"
+            ]
+        },
+        "26270": {
+            "name": "Tattoo of the Hinekora Storyteller",
+            "icon": "Art/2DArt/SkillIcons/passives/skillduration.png",
+            "activeEffectImage": "Art/2DArt/UIImages/InGame/AncestralTrial/PassiveTreeTattoos/HinekoraTribePassiveBG.png",
+            "isTattoo": True,
+            "stats": [
+                "+3% to Chaos Resistance"
+            ]
+        },
+        "60472": {
+            "name": "Tattoo of the Ngamahu Firewalker",
+            "icon": "Art/2DArt/SkillIcons/passives/FireResistNode.png",
+            "activeEffectImage": "Art/2DArt/UIImages/InGame/AncestralTrial/PassiveTreeTattoos/NgamahuTribePassiveBG.png",
+            "isTattoo": True,
+            "stats": [
+                "+6% to Fire Resistance"
+            ]
+        },
+        "34171": {
+            "name": "Tattoo of the Ngamahu Firewalker",
+            "icon": "Art/2DArt/SkillIcons/passives/FireResistNode.png",
+            "activeEffectImage": "Art/2DArt/UIImages/InGame/AncestralTrial/PassiveTreeTattoos/NgamahuTribePassiveBG.png",
+            "isTattoo": True,
+            "stats": [
+                "+6% to Fire Resistance"
+            ]
+        },
+        "64210": {
+            "name": "Tattoo of the Rongokurai Turtle",
+            "icon": "Art/2DArt/SkillIcons/passives/dmgreduction.png",
+            "activeEffectImage": "Art/2DArt/UIImages/InGame/AncestralTrial/PassiveTreeTattoos/RongokuraiTribePassiveBG.png",
+            "isTattoo": True,
+            "stats": [
+                "You take 5% reduced Extra Damage from Critical Strikes"
+            ]
+        },
+        "7444": {
+            "name": "Tattoo of the Rongokurai Turtle",
+            "icon": "Art/2DArt/SkillIcons/passives/dmgreduction.png",
+            "activeEffectImage": "Art/2DArt/UIImages/InGame/AncestralTrial/PassiveTreeTattoos/RongokuraiTribePassiveBG.png",
+            "isTattoo": True,
+            "stats": [
+                "You take 5% reduced Extra Damage from Critical Strikes"
+            ]
+        },
+        "49178": {
+            "name": "Tattoo of the Ngamahu Firewalker",
+            "icon": "Art/2DArt/SkillIcons/passives/FireResistNode.png",
+            "activeEffectImage": "Art/2DArt/UIImages/InGame/AncestralTrial/PassiveTreeTattoos/NgamahuTribePassiveBG.png",
+            "isTattoo": True,
+            "stats": [
+                "+6% to Fire Resistance"
+            ]
+        },
+        "30733": {
+            "name": "Tattoo of the Ngamahu Firewalker",
+            "icon": "Art/2DArt/SkillIcons/passives/FireResistNode.png",
+            "activeEffectImage": "Art/2DArt/UIImages/InGame/AncestralTrial/PassiveTreeTattoos/NgamahuTribePassiveBG.png",
+            "isTattoo": True,
+            "stats": [
+                "+6% to Fire Resistance"
+            ]
+        }
+    },
+    "items": [
+        {
+            "verified": False,
+            "w": 1,
+            "h": 1,
+            "icon": "https://web.poecdn.com/gen/image/WzI1LDE0LHsiZiI6IjJESXRlbXMvSmV3ZWxzL2Jhc2ljaW50IiwidyI6MSwiaCI6MSwic2NhbGUiOjEsImZyYWN0dXJlZCI6dHJ1ZX1d/b470123709/basicint.png",
+            "league": "Settlers",
+            "id": "c188df341d5971e08deab42d7a2c9ee358a4ccf280231f1385ade74a5de8f0b4",
+            "fractured": True,
+            "name": "Loath Drop",
+            "typeLine": "Cobalt Jewel",
+            "baseType": "Cobalt Jewel",
+            "rarity": "Rare",
+            "ilvl": 83,
+            "identified": True,
+            "explicitMods": [
+                "11% increased Spell Damage",
+                "10% increased Chaos Damage",
+                "+18% to Critical Strike Multiplier with Fire Skills"
+            ],
+            "fracturedMods": [
+                "+2% to maximum Lightning Resistance"
+            ],
+            "descrText": "Place into an allocated Jewel Socket on the Passive Skill Tree. Right click to remove from the Socket.",
+            "frameType": 2,
+            "x": 7,
+            "y": 0,
+            "inventoryId": "PassiveJewels"
+        },
+        {
+            "verified": False,
+            "w": 1,
+            "h": 1,
+            "icon": "https://web.poecdn.com/gen/image/WzI1LDE0LHsiZiI6IjJESXRlbXMvSmV3ZWxzL0VudGFuZ2xlZEVsZW1lbnRzSmV3ZWwiLCJ3IjoxLCJoIjoxLCJzY2FsZSI6MX1d/781ab651c4/EntangledElementsJewel.png",
+            "league": "Settlers",
+            "id": "27f6baebb718530f39afe7297786168bb9ae803ad743f822c094f3c5438d1f60",
+            "name": "Melding of the Flesh",
+            "typeLine": "Cobalt Jewel",
+            "baseType": "Cobalt Jewel",
+            "rarity": "Unique",
+            "ilvl": 86,
+            "identified": True,
+            "properties": [
+                {
+                    "name": "Limited to",
+                    "values": [
+                        [
+                            "1",
+                            0
+                        ]
+                    ],
+                    "displayMode": 0
+                }
+            ],
+            "explicitMods": [
+                "-71% to all Elemental Resistances",
+                "-4% to all maximum Elemental Resistances",
+                "Elemental Resistances are capped by your highest Maximum Elemental Resistance instead"
+            ],
+            "descrText": "Place into an allocated Jewel Socket on the Passive Skill Tree. Right click to remove from the Socket.",
+            "flavourText": [
+                "\"We awoke to a sudden jungle rupturing the valleys of our home.\r",
+                "Grasping limbs coiled around us, into us. We sank into each other,\r",
+                "then rose into the living sky. My family screams alongside me still.\""
+            ],
+            "frameType": 3,
+            "x": 10,
+            "y": 0,
+            "inventoryId": "PassiveJewels"
+        },
+        {
+            "verified": False,
+            "w": 1,
+            "h": 1,
+            "icon": "https://web.poecdn.com/gen/image/WzI1LDE0LHsiZiI6IjJESXRlbXMvSmV3ZWxzL05ld0dlbUJhc2UyIiwidyI6MSwiaCI6MSwic2NhbGUiOjF9XQ/78f6bf8356/NewGemBase2.png",
+            "league": "Settlers",
+            "id": "3e8f0167f105f54654be1abc158e277e71e920b6f4dd09cf22cc9654aebd2397",
+            "name": "Chimeric Curio",
+            "typeLine": "Medium Cluster Jewel",
+            "baseType": "Medium Cluster Jewel",
+            "rarity": "Rare",
+            "ilvl": 69,
+            "identified": True,
+            "requirements": [
+                {
+                    "name": "Level",
+                    "values": [
+                        [
+                            "54",
+                            0
+                        ]
+                    ],
+                    "displayMode": 0,
+                    "type": 62
+                }
+            ],
+            "enchantMods": [
+                "Adds 5 Passive Skills",
+                "1 Added Passive Skill is a Jewel Socket",
+                "Added Small Passive Skills grant: 15% increased Critical Strike Chance"
+            ],
+            "explicitMods": [
+                "Added Small Passive Skills also grant: +3 to All Attributes",
+                "Added Small Passive Skills also grant: +3% to Chaos Resistance",
+                "1 Added Passive Skill is Basics of Pain",
+                "1 Added Passive Skill is Pressure Points"
+            ],
+            "descrText": "Place into an allocated Medium or Large Jewel Socket on the Passive Skill Tree. Added passives do not interact with jewel radiuses. Right click to remove from the Socket.",
+            "frameType": 2,
+            "x": 23,
+            "y": 0,
+            "inventoryId": "PassiveJewels"
+        },
+        {
+            "verified": False,
+            "w": 1,
+            "h": 1,
+            "icon": "https://web.poecdn.com/gen/image/WzI1LDE0LHsiZiI6IjJESXRlbXMvSmV3ZWxzL1VubmF0dXJhbEluc3RpbmN0IiwidyI6MSwiaCI6MSwic2NhbGUiOjF9XQ/c37fa5c2b6/UnnaturalInstinct.png",
+            "league": "Settlers",
+            "id": "b6dba2ab7e174f69756718c636bba07649dba633c4448f025b12fae01d987c6d",
+            "name": "Unnatural Instinct",
+            "typeLine": "Viridian Jewel",
+            "baseType": "Viridian Jewel",
+            "rarity": "Unique",
+            "ilvl": 86,
+            "identified": True,
+            "properties": [
+                {
+                    "name": "Limited to",
+                    "values": [
+                        [
+                            "1",
+                            0
+                        ]
+                    ],
+                    "displayMode": 0
+                },
+                {
+                    "name": "Radius",
+                    "values": [
+                        [
+                            "Small",
+                            0
+                        ]
+                    ],
+                    "displayMode": 0,
+                    "type": 24
+                }
+            ],
+            "explicitMods": [
+                "Allocated Small Passive Skills in Radius grant nothing",
+                "Grants all bonuses of Unallocated Small Passive Skills in Radius"
+            ],
+            "descrText": "Place into an allocated Jewel Socket on the Passive Skill Tree. Right click to remove from the Socket.",
+            "flavourText": [
+                "\"I don't know how I know, \r",
+                "I just know that I know.\""
+            ],
+            "frameType": 3,
+            "x": 8,
+            "y": 0,
+            "inventoryId": "PassiveJewels"
+        },
+        {
+            "verified": False,
+            "w": 1,
+            "h": 1,
+            "icon": "https://web.poecdn.com/gen/image/WzI1LDE0LHsiZiI6IjJESXRlbXMvSmV3ZWxzL0VsZGVySmV3ZWwiLCJ3IjoxLCJoIjoxLCJzY2FsZSI6MX1d/278c673716/ElderJewel.png",
+            "league": "Settlers",
+            "id": "b192c319eef53099ea03133c54154eb652294841223e9199f51a3967984f9fc2",
+            "name": "Watcher's Eye",
+            "typeLine": "Prismatic Jewel",
+            "baseType": "Prismatic Jewel",
+            "rarity": "Unique",
+            "ilvl": 87,
+            "identified": True,
+            "properties": [
+                {
+                    "name": "Limited to",
+                    "values": [
+                        [
+                            "1",
+                            0
+                        ]
+                    ],
+                    "displayMode": 0
+                }
+            ],
+            "explicitMods": [
+                "6% increased maximum Energy Shield",
+                "4% increased maximum Life",
+                "4% increased maximum Mana",
+                "59% increased Life Recovery from Flasks while affected by Vitality",
+                "15% increased Movement Speed while affected by Grace",
+                "+14% chance to Suppress Spell Damage while affected by Grace"
+            ],
+            "descrText": "Place into an allocated Jewel Socket on the Passive Skill Tree. Right click to remove from the Socket.",
+            "flavourText": [
+                "One by one, they stood their ground against a creature \r",
+                "they had no hope of understanding, let alone defeating,\r",
+                "and one by one, they became a part of it."
+            ],
+            "frameType": 3,
+            "x": 26,
+            "y": 0,
+            "inventoryId": "PassiveJewels"
+        },
+        {
+            "verified": False,
+            "w": 1,
+            "h": 1,
+            "icon": "https://web.poecdn.com/gen/image/WzI1LDE0LHsiZiI6IjJESXRlbXMvSmV3ZWxzL2Jhc2ljaW50IiwidyI6MSwiaCI6MSwic2NhbGUiOjEsImZyYWN0dXJlZCI6dHJ1ZX1d/b470123709/basicint.png",
+            "league": "Settlers",
+            "id": "821ddb40fc20b2ac2424eef8c71a2cdf7e8a7ee70dbe4ba363dbe20659185f6c",
+            "fractured": True,
+            "name": "Sol Hope",
+            "typeLine": "Cobalt Jewel",
+            "baseType": "Cobalt Jewel",
+            "rarity": "Rare",
+            "ilvl": 85,
+            "identified": True,
+            "explicitMods": [
+                "15% increased Spell Damage while holding a Shield",
+                "+14% to Critical Strike Multiplier for Spell Damage",
+                "+15% to Critical Strike Multiplier with Fire Skills"
+            ],
+            "fracturedMods": [
+                "+2% to maximum Lightning Resistance"
+            ],
+            "descrText": "Place into an allocated Jewel Socket on the Passive Skill Tree. Right click to remove from the Socket.",
+            "frameType": 2,
+            "x": 18,
+            "y": 0,
+            "inventoryId": "PassiveJewels"
+        },
+        {
+            "verified": False,
+            "w": 1,
+            "h": 1,
+            "icon": "https://web.poecdn.com/gen/image/WzI1LDE0LHsiZiI6IjJESXRlbXMvSmV3ZWxzL05ld0dlbUJhc2UzIiwidyI6MSwiaCI6MSwic2NhbGUiOjEsImZyYWN0dXJlZCI6dHJ1ZX1d/a68dec0dae/NewGemBase3.png",
+            "league": "Settlers",
+            "id": "69a2bf8f273b4d7413059478c6911b0be2c0aaebab3d5e13036f4a933c135a8b",
+            "fractured": True,
+            "name": "Viper Essence",
+            "typeLine": "Large Cluster Jewel",
+            "baseType": "Large Cluster Jewel",
+            "rarity": "Rare",
+            "ilvl": 84,
+            "identified": True,
+            "requirements": [
+                {
+                    "name": "Level",
+                    "values": [
+                        [
+                            "60",
+                            0
+                        ]
+                    ],
+                    "displayMode": 0,
+                    "type": 62
+                }
+            ],
+            "enchantMods": [
+                "Adds 8 Passive Skills",
+                "2 Added Passive Skills are Jewel Sockets",
+                "Added Small Passive Skills grant: 12% increased Chaos Damage"
+            ],
+            "explicitMods": [
+                "Added Small Passive Skills also grant: +3% to Chaos Resistance",
+                "1 Added Passive Skill is Dark Ideation",
+                "1 Added Passive Skill is Overwhelming Malice"
+            ],
+            "fracturedMods": [
+                "1 Added Passive Skill is Unspeakable Gifts"
+            ],
+            "descrText": "Place into an allocated Large Jewel Socket on the Passive Skill Tree. Added passives do not interact with jewel radiuses. Right click to remove from the Socket.",
+            "frameType": 2,
+            "x": 11,
+            "y": 0,
+            "inventoryId": "PassiveJewels"
+        },
+        {
+            "verified": False,
+            "w": 1,
+            "h": 1,
+            "icon": "https://web.poecdn.com/gen/image/WzI1LDE0LHsiZiI6IjJESXRlbXMvSmV3ZWxzL1B1enpsZVBpZWNlSmV3ZWxfR3JlYXRUYW5nbGUiLCJ3IjoxLCJoIjoxLCJzY2FsZSI6MX1d/9035b9ffd4/PuzzlePieceJewel_GreatTangle.png",
+            "league": "Settlers",
+            "id": "6597cec26f7f47cf82b9e30215f5fbd50a45273a3cdd65299ea0bf0cdeda7790",
+            "name": "Forbidden Flesh",
+            "typeLine": "Cobalt Jewel",
+            "baseType": "Cobalt Jewel",
+            "rarity": "Unique",
+            "ilvl": 86,
+            "identified": True,
+            "corrupted": True,
+            "properties": [
+                {
+                    "name": "Limited to",
+                    "values": [
+                        [
+                            "1",
+                            0
+                        ]
+                    ],
+                    "displayMode": 0
+                }
+            ],
+            "requirements": [
+                {
+                    "name": "Class:",
+                    "values": [
+                        [
+                            "Templar",
+                            0
+                        ]
+                    ],
+                    "displayMode": 0,
+                    "type": 57
+                }
+            ],
+            "explicitMods": [
+                "Allocates Righteous Providence if you have the matching modifier on Forbidden Flame"
+            ],
+            "descrText": "Place into an allocated Jewel Socket on the Passive Skill Tree. Right click to remove from the Socket.",
+            "flavourText": [
+                "The bodies of those wholly subsumed by the Tangle\r",
+                "continue to merge and mutate and cry out for release..."
+            ],
+            "frameType": 3,
+            "x": 1,
+            "y": 0,
+            "inventoryId": "PassiveJewels"
+        },
+        {
+            "verified": False,
+            "w": 1,
+            "h": 1,
+            "icon": "https://web.poecdn.com/gen/image/WzI1LDE0LHsiZiI6IjJESXRlbXMvSmV3ZWxzL1RlbXBsYXJDaXZpbGl6YXRpb24iLCJ3IjoxLCJoIjoxLCJzY2FsZSI6MX1d/09ecf8ac86/TemplarCivilization.png",
+            "league": "Settlers",
+            "id": "079dfd6371c9703532291e17eac01744ddb8ee723e53e0e18d11365bca278f6e",
+            "name": "Militant Faith",
+            "typeLine": "Timeless Jewel",
+            "baseType": "Timeless Jewel",
+            "rarity": "Unique",
+            "ilvl": 84,
+            "identified": True,
+            "properties": [
+                {
+                    "name": "Limited to",
+                    "values": [
+                        [
+                            "1 Historic",
+                            0
+                        ]
+                    ],
+                    "displayMode": 0
+                },
+                {
+                    "name": "Radius",
+                    "values": [
+                        [
+                            "Large",
+                            0
+                        ]
+                    ],
+                    "displayMode": 0,
+                    "type": 24
+                }
+            ],
+            "explicitMods": [
+                "Carved to glorify 7875 new faithful converted by High Templar Dominus\nPassives in radius are Conquered by the Templars",
+                "+2% to all Elemental Resistances per 10 Devotion",
+                "1% reduced Mana Cost of Skills per 10 Devotion",
+                "Historic"
+            ],
+            "descrText": "Place into an allocated Jewel Socket on the Passive Skill Tree. Right click to remove from the Socket.",
+            "flavourText": [
+                "They believed themselves the utmost faithful, but that conviction became oppression."
+            ],
+            "frameType": 3,
+            "x": 6,
+            "y": 0,
+            "inventoryId": "PassiveJewels"
+        },
+        {
+            "verified": False,
+            "w": 1,
+            "h": 1,
+            "icon": "https://web.poecdn.com/gen/image/WzI1LDE0LHsiZiI6IjJESXRlbXMvSmV3ZWxzL1B1enpsZVBpZWNlSmV3ZWxfQ2xlYW5zaW5nRmlyZSIsInciOjEsImgiOjEsInNjYWxlIjoxLCJyZWxpYyI6OH1d/71188ac7b5/PuzzlePieceJewel_CleansingFire.png",
+            "league": "Settlers",
+            "id": "4f82d90f0997952fecf2de0da052d846459cfc7a8b964f7030516c49c02516e9",
+            "isRelic": True,
+            "foilVariation": 8,
+            "name": "Forbidden Flame",
+            "typeLine": "Crimson Jewel",
+            "baseType": "Crimson Jewel",
+            "rarity": "Unique",
+            "ilvl": 84,
+            "identified": True,
+            "corrupted": True,
+            "properties": [
+                {
+                    "name": "Limited to",
+                    "values": [
+                        [
+                            "1",
+                            0
+                        ]
+                    ],
+                    "displayMode": 0
+                }
+            ],
+            "requirements": [
+                {
+                    "name": "Class:",
+                    "values": [
+                        [
+                            "Templar",
+                            0
+                        ]
+                    ],
+                    "displayMode": 0,
+                    "type": 57
+                }
+            ],
+            "explicitMods": [
+                "Allocates Righteous Providence if you have the matching modifier on Forbidden Flesh"
+            ],
+            "descrText": "Place into an allocated Jewel Socket on the Passive Skill Tree. Right click to remove from the Socket.",
+            "flavourText": [
+                "The minds of those studied utterly by the Cleansing Fire\r",
+                "continue to think and dream and beg for silence..."
+            ],
+            "frameType": 10,
+            "x": 14,
+            "y": 0,
+            "inventoryId": "PassiveJewels"
+        },
+        {
+            "verified": False,
+            "w": 1,
+            "h": 1,
+            "icon": "https://web.poecdn.com/gen/image/WzI1LDE0LHsiZiI6IjJESXRlbXMvSmV3ZWxzL1ViZXJDb3J0ZXhKZXdlbCIsInciOjEsImgiOjEsInNjYWxlIjoxLCJzeW50aGVzaXNlZCI6dHJ1ZX1d/75a97b9ff9/UberCortexJewel.png",
+            "league": "Settlers",
+            "id": "1a22491cec15abf69c331635ccc4d7f44b81f025da48bdd33cbbd4c6bff3abe4",
+            "synthesised": True,
+            "name": "Rational Doctrine",
+            "typeLine": "Synthesised Cobalt Jewel",
+            "baseType": "Cobalt Jewel",
+            "rarity": "Unique",
+            "ilvl": 87,
+            "identified": True,
+            "implicitMods": [
+                "+4% to Global Critical Strike Multiplier",
+                "+3% to Chaos Resistance",
+                "0.1% of Physical Attack Damage Leeched as Mana"
+            ],
+            "explicitMods": [
+                "You have Consecrated Ground around you while\nstationary if Strength is your highest Attribute",
+                "25% chance to create Profane Ground on Critical\nStrike if Intelligence is your highest Attribute",
+                "Effects of Consecrated Ground you create Linger for 4 seconds",
+                "Effects of Profane Ground you create Linger for 4 seconds"
+            ],
+            "descrText": "Place into an allocated Jewel Socket on the Passive Skill Tree. Right click to remove from the Socket.",
+            "flavourText": [
+                "Logic wanes in shining faith, and in rationalism, ardour dims\r",
+                "Thus, the cynic and the zealot are divided\r",
+                "But can they not be one and the same?"
+            ],
+            "frameType": 3,
+            "x": 21,
+            "y": 0,
+            "inventoryId": "PassiveJewels"
+        }
+    ],
+    "jewel_data": {
+        "7": {
+            "type": "JewelInt"
+        },
+        "10": {
+            "type": "JewelInt"
+        },
+        "23": {
+            "type": "JewelPassiveTreeExpansionMedium",
+            "subgraph": {
+                "groups": {
+                    "expansion_23": {
+                        "proxy": "13201",
+                        "nodes": [
+                            "1030",
+                            "30",
+                            "31",
+                            "32",
+                            "33",
+                            "34"
+                        ],
+                        "x": -4302.55,
+                        "y": -8983.51,
+                        "orbits": [
+                            2
+                        ]
+                    }
+                },
+                "nodes": {
+                    "1030": {
+                        "skill": "2510",
+                        "name": "Critical Chance Mastery",
+                        "icon": "Art/2DArt/SkillIcons/passives/AltMasteryGroupCrit.png",
+                        "isMastery": True,
+                        "stats": [],
+                        "group": "expansion_23",
+                        "orbit": 0,
+                        "orbitIndex": 0,
+                        "out": [],
+                        "in": []
+                    },
+                    "30": {
+                        "skill": "2311",
+                        "name": "Small Jewel Socket",
+                        "icon": "Art/2DArt/SkillIcons/passives/MasteryBlank.png",
+                        "isJewelSocket": True,
+                        "expansionJewel": {
+                            "size": 0,
+                            "index": 0,
+                            "proxy": "7956",
+                            "parent": "9408"
+                        },
+                        "stats": [],
+                        "group": "expansion_23",
+                        "orbit": 2,
+                        "orbitIndex": 1,
+                        "out": [
+                            "31"
+                        ],
+                        "in": [
+                            "34"
+                        ]
+                    },
+                    "31": {
+                        "skill": "10695",
+                        "name": "Critical Chance",
+                        "icon": "Art/2DArt/SkillIcons/passives/IncreaseCritChanceNode.png",
+                        "stats": [
+                            "+3 to all Attributes",
+                            "+3% to Chaos Resistance",
+                            "15% increased Critical Strike Chance"
+                        ],
+                        "group": "expansion_23",
+                        "orbit": 2,
+                        "orbitIndex": 4,
+                        "out": [
+                            "32"
+                        ],
+                        "in": [
+                            "30"
+                        ]
+                    },
+                    "32": {
+                        "skill": "44544",
+                        "name": "Basics of Pain",
+                        "icon": "Art/2DArt/SkillIcons/passives/IncreaseCritChanceNotable.png",
+                        "isNotable": True,
+                        "stats": [
+                            "20% increased Damage",
+                            "30% increased Critical Strike Chance"
+                        ],
+                        "group": "expansion_23",
+                        "orbit": 2,
+                        "orbitIndex": 7,
+                        "out": [
+                            "33"
+                        ],
+                        "in": [
+                            "31"
+                        ]
+                    },
+                    "33": {
+                        "skill": "10695",
+                        "name": "Critical Chance",
+                        "icon": "Art/2DArt/SkillIcons/passives/IncreaseCritChanceNode.png",
+                        "stats": [
+                            "+3 to all Attributes",
+                            "+3% to Chaos Resistance",
+                            "15% increased Critical Strike Chance"
+                        ],
+                        "group": "expansion_23",
+                        "orbit": 2,
+                        "orbitIndex": 9,
+                        "out": [
+                            "34",
+                            "32"
+                        ],
+                        "in": [
+                            "9408"
+                        ]
+                    },
+                    "34": {
+                        "skill": "38633",
+                        "name": "Pressure Points",
+                        "icon": "Art/2DArt/SkillIcons/passives/IncreaseCritChanceNotable.png",
+                        "isNotable": True,
+                        "stats": [
+                            "Your Critical Strikes have a 5% chance to deal Double Damage",
+                            "30% increased Critical Strike Chance"
+                        ],
+                        "group": "expansion_23",
+                        "orbit": 2,
+                        "orbitIndex": 12,
+                        "out": [
+                            "30"
+                        ],
+                        "in": [
+                            "33"
+                        ]
+                    }
+                }
+            }
+        },
+        "8": {
+            "type": "JewelDex",
+            "radius": 960
+        },
+        "26": {
+            "type": "JewelPrismatic"
+        },
+        "18": {
+            "type": "JewelInt"
+        },
+        "11": {
+            "type": "JewelPassiveTreeExpansionLarge",
+            "subgraph": {
+                "groups": {
+                    "expansion_11": {
+                        "proxy": "43989",
+                        "nodes": [
+                            "0",
+                            "1",
+                            "10",
+                            "1000",
+                            "11",
+                            "3",
+                            "5",
+                            "7",
+                            "9"
+                        ],
+                        "x": -4708.05,
+                        "y": -8281.17,
+                        "orbits": [
+                            3
+                        ]
+                    }
+                },
+                "nodes": {
+                    "0": {
+                        "skill": "46248",
+                        "name": "Chaos Damage",
+                        "icon": "Art/2DArt/SkillIcons/passives/ChaosDamagenode.png",
+                        "stats": [
+                            "12% increased Chaos Damage",
+                            "+3% to Chaos Resistance"
+                        ],
+                        "group": "expansion_11",
+                        "orbit": 3,
+                        "orbitIndex": 0,
+                        "out": [
+                            "1"
+                        ],
+                        "in": [
+                            "11"
+                        ]
+                    },
+                    "1": {
+                        "skill": "9408",
+                        "name": "Medium Jewel Socket",
+                        "icon": "Art/2DArt/SkillIcons/passives/MasteryBlank.png",
+                        "isJewelSocket": True,
+                        "expansionJewel": {
+                            "size": 1,
+                            "index": 2,
+                            "proxy": "13201",
+                            "parent": "7960"
+                        },
+                        "stats": [],
+                        "group": "expansion_11",
+                        "orbit": 3,
+                        "orbitIndex": 1,
+                        "out": [
+                            "3"
+                        ],
+                        "in": [
+                            "0"
+                        ]
+                    },
+                    "10": {
+                        "skill": "46248",
+                        "name": "Chaos Damage",
+                        "icon": "Art/2DArt/SkillIcons/passives/ChaosDamagenode.png",
+                        "stats": [
+                            "12% increased Chaos Damage",
+                            "+3% to Chaos Resistance"
+                        ],
+                        "group": "expansion_11",
+                        "orbit": 3,
+                        "orbitIndex": 13,
+                        "out": [
+                            "11"
+                        ],
+                        "in": [
+                            "9"
+                        ]
+                    },
+                    "1000": {
+                        "skill": "12117",
+                        "name": "Chaos Damage Mastery",
+                        "icon": "Art/2DArt/SkillIcons/passives/AltMasteryChaos.png",
+                        "isMastery": True,
+                        "stats": [],
+                        "group": "expansion_11",
+                        "orbit": 0,
+                        "orbitIndex": 0,
+                        "out": [],
+                        "in": []
+                    },
+                    "11": {
+                        "skill": "1494",
+                        "name": "Unspeakable Gifts",
+                        "icon": "Art/2DArt/SkillIcons/passives/IncreasedChaosDamage.png",
+                        "isNotable": True,
+                        "stats": [
+                            "Enemies you Kill have a 10% chance to Explode, dealing a quarter of their maximum Life as Chaos Damage"
+                        ],
+                        "group": "expansion_11",
+                        "orbit": 3,
+                        "orbitIndex": 15,
+                        "out": [
+                            "0"
+                        ],
+                        "in": [
+                            "10"
+                        ]
+                    },
+                    "3": {
+                        "skill": "40828",
+                        "name": "Dark Ideation",
+                        "icon": "Art/2DArt/SkillIcons/passives/IncreasedChaosDamage.png",
+                        "isNotable": True,
+                        "stats": [
+                            "2% increased Chaos Damage per 100 maximum Mana, up to a maximum of 80%"
+                        ],
+                        "group": "expansion_11",
+                        "orbit": 3,
+                        "orbitIndex": 4,
+                        "out": [
+                            "5"
+                        ],
+                        "in": [
+                            "1"
+                        ]
+                    },
+                    "5": {
+                        "skill": "46248",
+                        "name": "Chaos Damage",
+                        "icon": "Art/2DArt/SkillIcons/passives/ChaosDamagenode.png",
+                        "stats": [
+                            "12% increased Chaos Damage",
+                            "+3% to Chaos Resistance"
+                        ],
+                        "group": "expansion_11",
+                        "orbit": 3,
+                        "orbitIndex": 7,
+                        "out": [
+                            "7",
+                            "3"
+                        ],
+                        "in": [
+                            "7960"
+                        ]
+                    },
+                    "7": {
+                        "skill": "2977",
+                        "name": "Overwhelming Malice",
+                        "icon": "Art/2DArt/SkillIcons/passives/IncreaseCritChanceNotable.png",
+                        "isNotable": True,
+                        "stats": [
+                            "10% chance to gain Unholy Might for 4 seconds on Critical Strike"
+                        ],
+                        "reminderText": [
+                            "(Unholy Might grants 100% of Physical Damage converted to Chaos Damage and 25% chance to apply Withered on Hit)"
+                        ],
+                        "group": "expansion_11",
+                        "orbit": 3,
+                        "orbitIndex": 9,
+                        "out": [
+                            "9"
+                        ],
+                        "in": [
+                            "5"
+                        ]
+                    },
+                    "9": {
+                        "skill": "29712",
+                        "name": "Medium Jewel Socket",
+                        "icon": "Art/2DArt/SkillIcons/passives/MasteryBlank.png",
+                        "isJewelSocket": True,
+                        "expansionJewel": {
+                            "size": 1,
+                            "index": 0,
+                            "proxy": "55706",
+                            "parent": "7960"
+                        },
+                        "stats": [],
+                        "group": "expansion_11",
+                        "orbit": 3,
+                        "orbitIndex": 12,
+                        "out": [
+                            "10"
+                        ],
+                        "in": [
+                            "7"
+                        ]
+                    }
+                }
+            }
+        },
+        "1": {
+            "type": "JewelInt"
+        },
+        "6": {
+            "type": "JewelTimeless",
+            "radius": 1800,
+            "radiusVisual": "Templar"
+        },
+        "14": {
+            "type": "JewelStr"
+        },
+        "21": {
+            "type": "JewelInt"
+        }
+    }
+}

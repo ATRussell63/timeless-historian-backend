@@ -1,0 +1,15 @@
+version: '3.9'
+
+services:
+  timeless_auditor_db:
+    image: postgres:15-alpine
+    restart: always
+    shm_size: 128mb
+    environment:
+      POSTGRES_USER: timeless_admin
+      POSTGRES_PASSWORD: example
+      POSTGRES_DB: timeless_auditor
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./init_test_db.pgsql:/docker-entrypoint-initdb.d/init.sql
