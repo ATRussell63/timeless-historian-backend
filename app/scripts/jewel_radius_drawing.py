@@ -71,9 +71,20 @@ class JewelDrawing():
         pOrbitRadius = self.tree_data['constants']['orbitRadii'][pOrbit]
         skillsPerOrbit = self.tree_data['constants']['skillsPerOrbit'][pOrbit]
 
-        angle = math.radians(pOrbitIndex * (360 / skillsPerOrbit))
-        # convert angle to our new cursed paradigm
-        angle = angle - math.radians(90)
+        # hardcoded angles from pob /src/Classes/PassiveTree.lua
+        if skillsPerOrbit == 16:
+            angles = [0, 30, 45, 60, 90, 120, 135, 150, 180, 210, 225, 240, 270, 300, 315, 330]
+
+        elif skillsPerOrbit == 40:
+            angles = [0, 10, 20, 30, 40, 45, 50, 60, 70, 80, 90, 100, 110, 120, 130, 135, 140, 
+                      150, 160, 170, 180, 190, 200, 210, 220, 225, 230, 240, 250, 260, 270, 280,
+                      290, 300, 310, 315, 320, 330, 340, 350]
+        else:
+            angles = [x * (360 / skillsPerOrbit) for x in range(skillsPerOrbit)]
+
+        angle = angles[pOrbitIndex]
+        # rotate into our new cursed paradigm
+        angle = math.radians(angle - 90)
 
         pX = (math.cos(angle) * pOrbitRadius) + gX
         pY = (math.sin(angle) * pOrbitRadius) + gY
