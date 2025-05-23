@@ -1,15 +1,19 @@
 from flask import Flask
+from flask_cors import CORS
 from logging.config import dictConfig
-from views.test_view import test_view
+from app.views.test_view import test_view
+from app.views.view_search import search
 
 
 def setup_app(config):
     f = Flask(__name__)
+    CORS(f)
     f.config.from_object(config)
     log_config = get_log_config(f.config)
     dictConfig(log_config)
 
     f.register_blueprint(test_view)
+    f.register_blueprint(search)
 
     return f
 

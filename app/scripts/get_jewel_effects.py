@@ -7,35 +7,39 @@ import re
 import copy
 import pandas
 from app.scripts.classes import Node
+from app.app_config import get_data_path
 
-DATA_DIR = 'app/data/'
+LP = 'Lethal Pride'
+BR = 'Brutal Restraint'
+EH = 'Elegant Hubris'
+MF = 'Militant Faith'
 GV = 'Glorious Vanity'
 
 
 class NodeLookup():
 
     JEWEL_TYPES = {
-        'Elegant Hubris': {
+        EH: {
             'minimum': 2000,
             'maximum': 160000,
             'increment': 20
         },
-        'Brutal Restraint': {
+        BR: {
             'minimum': 500,
             'maximum': 8000,
             'increment': 1
         },
-        'Lethal Pride': {
+        LP: {
             'minimum': 10000,
             'maximum': 18000,
             'increment': 1
         },
-        'Militant Faith': {
+        MF: {
             'minimum': 2000,
             'maximum': 10000,
             'increment': 1
         },
-        'Glorious Vanity': {
+        GV: {
             'minimum': 100,
             'maximum': 8000,
             'increment': 1
@@ -61,12 +65,12 @@ class NodeLookup():
     }
 
     BASIC_STAT_NODES = ['Strength', 'Dexterity', 'Intelligence']
-
-    CSV_PATH = DATA_DIR + 'node_indices.csv'
-    PASSIVE_LUT_PATH = DATA_DIR + 'passive_lut.json'
-    FAST_GV_LOOKUP = DATA_DIR + 'GloriousVanityFAST'
-
+    
     def __init__(self):
+        self.DATA_DIR = get_data_path()
+        self.CSV_PATH = self.DATA_DIR + 'node_indices.csv'
+        self.PASSIVE_LUT_PATH = self.DATA_DIR + 'LegionPassives.json'
+        self.FAST_GV_LOOKUP = self.DATA_DIR + 'GloriousVanityFAST'
         self._binary_data = {}
         self._node_id_index_csv = None
         self._node_replacements = None
@@ -129,7 +133,7 @@ class NodeLookup():
     def jewel_binary_data(self, jewel_type: str):
         if self._binary_data.get(jewel_type) is None:
             jname_trimmed = jewel_type.replace(' ', '')
-            with open(DATA_DIR + jname_trimmed, 'rb') as data_file:
+            with open(self.DATA_DIR + jname_trimmed, 'rb') as data_file:
                 b_file = data_file.read()
                 self._binary_data[jewel_type] = np.frombuffer(b_file, dtype=np.uint8)
 
@@ -163,38 +167,38 @@ class NodeLookup():
             Returns the data associated with 'what happened' as well as a bool flagging if the change was a replacement.
         """
 
-        if jewel_type == 'Elegant Hubris':
+        if jewel_type == EH:
             # replaces all small nodes with Price of Glory
             return self.price_node, True
-        elif jewel_type == 'Brutal Restraint':
+        elif jewel_type == BR:
             # applies +4 Dex to non-attribute small passives
             if node.name not in self.BASIC_STAT_NODES:
                 return self.df_find_addition_by_id('maraketh_small_dex'), False
             # applies +2 Dex to attribute small passives
             else:
                 return self.df_find_addition_by_id('maraketh_attribute_dex'), False
-        elif jewel_type == 'Lethal Pride':
+        elif jewel_type == LP:
             # applies +4 Str to non-attribute small passives
             if node.name not in self.BASIC_STAT_NODES:
                 return self.df_find_addition_by_id('karui_small_strength'), False
             # applies +2 Str to attribute small passives
             else:
                 return self.df_find_addition_by_id('karui_attribute_strength'), False
-        elif jewel_type == 'Militant Faith':
+        elif jewel_type == MF:
             # applies +5 to Devotion to non-attribute small passives
             if node.name not in self.BASIC_STAT_NODES:
                 return self.df_find_addition_by_id('templar_small_devotion'), False
             # replaces attribute small passives with Devotion (+10 node)
             else:
                 return self.devotion_node, True
-        elif jewel_type == 'Glorious Vanity':
+        elif jewel_type == GV:
             raise ValueError("Don't use this function for GV")
         else:
             raise ValueError(f'Not a valid jewel type: {jewel_type}')
 
     def lookup_notable_non_gv(self, jewel_type: str, jewel_seed: int, notable: Node) -> Tuple[Dict, bool]:
         """ Determines what will happen to the given notable based on the jewel details.
-            Returns the data from passive_lut.json associated with the change and whether the notable has been replaced.
+            Returns the data from LegionPassives.json associated with the change and whether the notable has been replaced.
             If False, the data indicates stats that are added to the notable.
         """
 
@@ -229,7 +233,7 @@ class NodeLookup():
         """
 
         jname_trimmed = GV.replace(' ', '')
-        source_filename = DATA_DIR + jname_trimmed
+        source_filename = self.DATA_DIR + jname_trimmed
         new_filename = source_filename + 'FAST'
 
         node_count = len(self.node_id_index_map)
@@ -268,7 +272,7 @@ class NodeLookup():
         # TODO - this is super rickety but for now it's good enough
         # probably want to verify that the file is a valid length, etc
         if not self.fast_gv_lookup_file_exists():
-            self.build_fast_gv_lookup_file
+            self.build_fast_gv_lookup_file()
 
         with open(self.FAST_GV_LOOKUP, 'rb') as fast_lut:
             fast_lut.seek(node_lut_index)

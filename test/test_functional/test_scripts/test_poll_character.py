@@ -37,7 +37,7 @@ DIVAYTH_FYR = {
         "id": "8674d2e0a0d350b81287999529cb79b0b0007059083a65610bcb128362c5a863",
         "name": "DIVAYTH_FYR",
         "level": 100,
-        "class": "Heirophant",
+        "class": "Hierophant",
         "experience": 4250334444
     },
     "account": {
@@ -47,6 +47,34 @@ DIVAYTH_FYR = {
             "completed": 6,
             "max": 40
         },
+    }
+}
+
+STEVE = {
+    "rank": 3,
+    "dead": False,
+    "public": True,
+    "character": {
+        "id": "24a852d3c4e0f6dad8edfa63f947a9e72aa9d3d7bc7268450fad844fb2cbaf8c",
+        "name": "NeedForSteveUnderground",
+        "level": 100,
+        "class": "Juggernaut",
+        "experience": 4250334444,
+        "depth": {
+            "default": 58568,
+            "solo": 58568
+        }
+    },
+    "account": {
+        "name": "turdtwisterx#4882",
+        "challenges": {
+            "set": "Village",
+            "completed": 23,
+            "max": 40
+        },
+        "twitch": {
+            "name": "turdtwisterx"
+        }
     }
 }
 
@@ -107,3 +135,16 @@ def test_process_single_ladder_entry(test_config, db_engine, clean_tables, add_s
         assert j.general_id == 14
         assert j.mf_mods == 4608
         assert j.socket_id == 6
+
+
+def test_process_ten_ladder_entries(test_config, db_engine, clean_tables, add_settlers_league):
+    pc.poll_ladder()
+
+
+def test_poll_padder(test_config, db_engine):
+    pc.poll_ladder()
+
+
+def test_db_jewel_matches_actually_works(test_config, db_engine, add_settlers_league):
+    settlers_id = add_settlers_league
+    pc.process_single_ladder_entry(STEVE, settlers_id)

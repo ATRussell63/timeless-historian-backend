@@ -4,6 +4,7 @@ from app.db import get_engine
 from app.models import c_, j_, l_
 from sqlalchemy import delete
 from sqlalchemy.sql import Delete
+from app.create_app import setup_app
 
 logger = logging.getLogger('main')
 
@@ -52,3 +53,9 @@ def clean_tables(db_engine):
         logger.debug(f'Deleted {dl_result.rowcount} entries from `league`')
 
         conn.commit()
+
+
+@pytest.fixture()
+def test_app(test_config):
+    app = setup_app(test_config)
+    yield app.test_client()

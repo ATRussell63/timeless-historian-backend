@@ -47,7 +47,7 @@ insert into class_lut (base_class_name, ascendancy_class_name) values
     ('Marauder', 'Berserker'),
     ('Templar', 'Inquisitor'),
     ('Templar', 'Guardian'),
-    ('Templar', 'Heirophant'),
+    ('Templar', 'Hierophant'),
     ('Scion', 'Ascendant');
 
 create table jewel_type_lut(
@@ -120,10 +120,130 @@ create table jewel(
     scan_date timestamp with time zone
 );
 
+create table socket_lut(
+    socket_id integer primary key,
+    node_id integer not null,
+    pob_name text not null,
+    description text not null
+);
+
+insert into socket_lut (socket_id, node_id, pob_name, description) values
+(0, 26725, 'Marauder', '')
+(1, 36634, 'Mind Over Matter', 'Templar/Witch Mid-tree'),
+(2, 33989, 'Supreme Ego', 'Shadow/Ranger Mid-tree'),
+(3, 41263, 'Pain Attunement', 'Witch/Shadow Mid-tree'),
+(4, 60735, 'Wind Dancer', 'Ranger'),
+(5, 61834, 'Ghost Dance', 'Shadow'),
+(6, 31683, 'Iron Grip', 'Scion S'),
+(7, 28475, 'Unwavering Stance', 'Duelist/Marauder Mid-tree'),
+(8, 6230, 'Iron Will', 'Scion NW'),
+(9, 48768, 'Conduit', 'Scion NE'),
+(10, 34483, 'Elemental Equilibrium', 'Ranger/Duelist Mid-tree'),
+(11, 7960, 'Templar/Witch', 'Elemental Damage Cluster Socket'),
+(12, 46882, 'Point Blank', 'Evasion Cluster Socket'),
+(13, 55190, 'Resolute Technique', 'Armour Cluster Socket'),
+(14, 61419, 'Minion Instability', 'Witch'),
+(15, 2491, 'Arsenal of Vengeance', 'Melee Damage Cluster Socket'),
+(16, 54127, 'Duelist', ''),
+(17, 32763, 'Perfect Agony', 'Projectile Damage Cluster Socket'),
+(18, 26196, 'The Agnostic', 'Templar'),
+(19, 33631, 'Eternal Youth', 'Marauder/Templar Mid-tree'),
+(20, 21984, 'Eldritch Battery', 'Mana Cluster Socket');
 
 
+-- the machines have won, it's over
+CREATE OR REPLACE FUNCTION get_mod_texts(sum_val integer)
+RETURNS TABLE(
+    bit1 integer,
+    text1 text,
+    bit2 integer,
+    text2 text
+)
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    i integer;
+    current_bit integer;
+BEGIN
+    FOR i IN 0..14 LOOP
+        current_bit := (1 << i);
+        IF (sum_val & current_bit) != 0 THEN
+            IF bit1 IS NULL THEN
+                SELECT mod_bit, mod_text INTO bit1, text1
+                FROM mf_mod_lut
+                WHERE mod_bit = current_bit;
+            ELSE
+                SELECT mod_bit, mod_text INTO bit2, text2
+                FROM mf_mod_lut
+                WHERE mod_bit = current_bit;
+                RETURN NEXT;
+                RETURN;
+            END IF;
+        END IF;
+    END LOOP;
+
+    RETURN;
+END;
+$$;
 
 
+CREATE OR REPLACE FUNCTION get_mod_text_by_idx(sum_val integer, idx integer)
+RETURNS text
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    i integer;
+    current_bit integer;
+    found_count integer := 0;
+    mod_text_result text;
+BEGIN
+    IF idx NOT IN (1, 2) THEN
+        RAISE EXCEPTION 'idx must be 1 or 2';
+    END IF;
+
+    FOR i IN 0..14 LOOP
+        current_bit := (1 << i);
+        IF (sum_val & current_bit) != 0 THEN
+            found_count := found_count + 1;
+            IF found_count = idx THEN
+                SELECT mod_text INTO mod_text_result
+                FROM mf_mod_lut
+                WHERE mod_bit = current_bit;
+                RETURN mod_text_result;
+            END IF;
+        END IF;
+    END LOOP;
+
+    -- If we didn't find enough set bits
+    RETURN NULL;
+END;
+$$;
+
+
+CREATE OR REPLACE FUNCTION mf_mods_contains_bit(
+    mf_mods INTEGER,
+    mod_bit INTEGER
+) RETURNS BOOLEAN
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    power INTEGER := 1;
+BEGIN
+    IF mod_bit <= 0 OR (mod_bit & (mod_bit - 1)) <> 0 THEN
+        -- mod_bit must be a power of 2
+        RAISE EXCEPTION 'mod_bit must be a power of 2';
+    END IF;
+
+    WHILE power <= mf_mods LOOP
+        IF power <> mod_bit AND mf_mods = mod_bit + power THEN
+            RETURN TRUE;
+        END IF;
+        power := power * 2;
+    END LOOP;
+
+    RETURN FALSE;
+END;
+$$;
 
 
 

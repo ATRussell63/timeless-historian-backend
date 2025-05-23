@@ -52,60 +52,60 @@ def test_parse_jewel_json_object():
     ld = LutData()
 
     jewel_obj = {
-            "verified": False,
-            "w": 1,
-            "h": 1,
-            "icon": "https://web.poecdn.com/gen/image/WzI1LDE0LHsiZ"
-            "iI6IjJESXRlbXMvSmV3ZWxzL1RlbXBsYXJDaXZpbGl6YXRpb24iLCJ3Ijox"
-            "LCJoIjoxLCJzY2FsZSI6MX1d/09ecf8ac86/TemplarCivilization.png",
-            "league": "Settlers",
-            "id": "079dfd6371c9703532291e17eac01744ddb8ee723e53e0e18d11365bca278f6e",
-            "name": "Militant Faith",
-            "typeLine": "Timeless Jewel",
-            "baseType": "Timeless Jewel",
-            "rarity": "Unique",
-            "ilvl": 84,
-            "identified": True,
-            "properties": [
-                {
-                    "name": "Limited to",
-                    "values": [
-                        [
-                            "1 Historic",
-                            0
-                        ]
-                    ],
-                    "displayMode": 0
-                },
-                {
-                    "name": "Radius",
-                    "values": [
-                        [
-                            "Large",
-                            0
-                        ]
-                    ],
-                    "displayMode": 0,
-                    "type": 24
-                }
-            ],
-            "explicitMods": [
-                "Carved to glorify 7875 new faithful converted by High Templar Dominus\nPassives in "
-                "radius are Conquered by the Templars",
-                "+2% to all Elemental Resistances per 10 Devotion",
-                "1% reduced Mana Cost of Skills per 10 Devotion",
-                "Historic"
-            ],
-            "descrText": "Place into an allocated Jewel Socket on the Passive Skill Tree. "
-            "Right click to remove from the Socket.",
-            "flavourText": [
-                "They believed themselves the utmost faithful, but that conviction became oppression."
-            ],
-            "frameType": 3,
-            "x": 6,
-            "y": 0,
-            "inventoryId": "PassiveJewels"
-        }
+        "verified": False,
+        "w": 1,
+        "h": 1,
+        "icon": "https://web.poecdn.com/gen/image/WzI1LDE0LHsiZ"
+        "iI6IjJESXRlbXMvSmV3ZWxzL1RlbXBsYXJDaXZpbGl6YXRpb24iLCJ3Ijox"
+        "LCJoIjoxLCJzY2FsZSI6MX1d/09ecf8ac86/TemplarCivilization.png",
+        "league": "Settlers",
+        "id": "079dfd6371c9703532291e17eac01744ddb8ee723e53e0e18d11365bca278f6e",
+        "name": "Militant Faith",
+        "typeLine": "Timeless Jewel",
+        "baseType": "Timeless Jewel",
+        "rarity": "Unique",
+        "ilvl": 84,
+        "identified": True,
+        "properties": [
+            {
+                "name": "Limited to",
+                "values": [
+                    [
+                        "1 Historic",
+                        0
+                    ]
+                ],
+                "displayMode": 0
+            },
+            {
+                "name": "Radius",
+                "values": [
+                    [
+                        "Large",
+                        0
+                    ]
+                ],
+                "displayMode": 0,
+                "type": 24
+            }
+        ],
+        "explicitMods": [
+            "Carved to glorify 7875 new faithful converted by High Templar Dominus\nPassives in "
+            "radius are Conquered by the Templars",
+            "+2% to all Elemental Resistances per 10 Devotion",
+            "1% reduced Mana Cost of Skills per 10 Devotion",
+            "Historic"
+        ],
+        "descrText": "Place into an allocated Jewel Socket on the Passive Skill Tree. "
+        "Right click to remove from the Socket.",
+        "flavourText": [
+            "They believed themselves the utmost faithful, but that conviction became oppression."
+        ],
+        "frameType": 3,
+        "x": 6,
+        "y": 0,
+        "inventoryId": "PassiveJewels"
+    }
     actual = pj.parse_jewel_json_object(jewel_obj, ld)
     assert expected == actual
 

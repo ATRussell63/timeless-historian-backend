@@ -25,7 +25,7 @@ class RateLimiter():
         wait = 0
         for x in range(len(limit_intervals)):
             interval_wait = self._stop_or_go(limit_intervals[x], state_intervals[x])
-            wait = interval_wait if interval_wait > wait else wait
+            wait = max(interval_wait, wait)
 
         if wait > 0:
             logger.debug(f'Headers indicate we should pause for {wait} seconds.')
@@ -33,21 +33,26 @@ class RateLimiter():
         return wait
 
     def _stop_or_go(self, limit_interval: str, state_interval: str) -> int:
+        logger.debug(f'stop or go - limit_interval={limit_interval}, state_interval={state_interval}')
         l_requests, l_interval_len, l_blackout = (int(s) for s in limit_interval.split(':'))
         s_requests, s_interval_len, s_blackout = (int(s) for s in state_interval.split(':'))
 
         if s_blackout > 0:
-            logger.error(f'Blacked out on {s_interval_len} second interval. \
-                         Signaling to pause for {s_blackout} seconds.')
-            return s_blackout
+            logger.error(f'Blacked out on {s_interval_len} second interval.\nSignaling to pause for {s_blackout} seconds.')
+            # TODO - We're hitting blackouts, I'm just gonna throw in a cheeky extra mult and hopefully it goes away
+            # that said this is a giga lazy solution
+            return s_blackout * 1.5
 
         elif s_requests >= l_requests - 1:
-            interval_rate_limit = ceil(int(l_interval_len / l_requests)) + 1
-            logger.debug(f'Reached {s_requests} of maximum {l_requests} requests on {s_interval_len} second interval. \
-                         Signaling to pause for {interval_rate_limit} seconds')
+            # TODO - I think for now it's a better call to avoid blackouts at all costs, just wait an entire period to buy back some requests
+            #        it's so much worse to trigger a blackout than it is to just waste an entire window
+            # interval_rate_limit = ceil(int(l_interval_len / l_requests)) + 1
+            interval_rate_limit = l_interval_len
+            logger.debug(f'Reached {s_requests} of maximum {l_requests} requests on {s_interval_len} second interval.\nSignaling to pause for {interval_rate_limit} seconds')
             return interval_rate_limit
 
         else:
+            logger.debug(f'{l_interval_len} second limit interval indicates no need to pause.')
             return 0
 
 
@@ -73,9 +78,10 @@ class Endpoint():
         return response
 
     def wait(self, seconds: int):
-        logger.debug(f'Pausing for {seconds} seconds...')
-        time.sleep(seconds)
-        logger.debug('Back to work!')
+        if seconds > 0:
+            logger.debug(f'Pausing for {seconds} seconds...')
+            time.sleep(seconds)
+            logger.debug('Back to work!')
 
 
 class GGG_Api():

@@ -1,13 +1,14 @@
 import math
 import json
-from typing import List, Dict
+import re
+from typing import List, Dict, Tuple
 import copy
 import logging
-# from app.scripts.poll_character import Jewel
 import app.scripts.get_jewel_effects as je
 from app.scripts.classes import Vertex, NodeTooltip, Node, DrawingRoot, StraightEdge, CurvedEdge, Jewel
 from app.util.parse_jewel import ParsedJewel
-TREE_FILE = 'app/data/tree.json'
+from app.app_config import get_data_path
+
 RELEVANT_NODE_TYPES = ['keystone', 'notable', 'small_passive', 'jewel_socket']
 
 logger = logging.getLogger('main')
@@ -21,13 +22,15 @@ class JewelDrawing():
 
     def __init__(self):
         self._TREE_DATA = None
-        self.TIMELESS_JEWEL_RADIUS = 1800
+        # TODO - marauder bottom starting node and quickstep have caused problems before
+        #        I don't have an intelligent reason for this value, it's a manual tuning issue
+        self.TIMELESS_JEWEL_RADIUS = 1792
 
     @property
     def tree_data(self):
         # TODO - I think I want to save the tree data in the db later on
         if not self._TREE_DATA:
-            with open(TREE_FILE, 'r') as tree_file:
+            with open(get_data_path() + 'data.json', 'r') as tree_file:
                 self._TREE_DATA = json.load(tree_file)
 
         return self._TREE_DATA
@@ -124,6 +127,8 @@ class JewelDrawing():
                 output[jewel] = DrawingRoot(
                     jewel_id=jewel,
                     api_idx=i,
+                    jewel_type=None,
+                    jewel_stats=None,
                     jewel_coords=absolute_coords,
                     radius=self.TIMELESS_JEWEL_RADIUS,
                     nodes={},
@@ -181,9 +186,9 @@ class JewelDrawing():
     def calc_arc_len(self, a: Node, b: Node, r: float, maxOrbits: int) -> float:
         i_dist = self.index_dist(a.orbitIndex, b.orbitIndex, maxOrbits)
         angle = 360 * (i_dist / maxOrbits)
-        print(f'Angle between nodes {a.name} and {b.name} is {angle} degrees')
+        # print(f'Angle between nodes {a.name} and {b.name} is {angle} degrees')
         arc_len = math.radians(angle) * r
-        print(f'Orbit radius between nodes {a.name} and {b.name} is {r}')
+        # print(f'Orbit radius between nodes {a.name} and {b.name} is {r}')
         return arc_len
 
     def calc_angle(self, a: Node, b: Node, r: float, maxOrbits: int) -> float:
@@ -391,7 +396,7 @@ class JewelDrawing():
         if timeless_jewel.jewel_type == 'Glorious Vanity':
             main_string = f'Bathed in the blood of {timeless_jewel.seed} sacrificed in the name of {timeless_jewel.general}'
             conquered_str += 'Vaal'
-        elif timeless_jewel.jewel_type == 'Elegant hubris':
+        elif timeless_jewel.jewel_type == 'Elegant Hubris':
             main_string = f'Commissioned {timeless_jewel.seed} coins to commemorate {timeless_jewel.general}'
             conquered_str += 'Eternal Empire'
         elif timeless_jewel.jewel_type == 'Militant Faith':
@@ -413,9 +418,106 @@ class JewelDrawing():
             replaced_title=None
         )
 
-    def apply_jewel_changes(self, jewel_drawing: DrawingRoot, timeless_jewel: ParsedJewel) -> DrawingRoot:
+    def add_effect_to_jewel_stats(self, jewel_stats: dict, effect: dict) -> dict:
+        """The effect of a jewel will either be to add or replace stats.
+           To present the user with a total of all the stats the jewel represents,
+           we build a list as we apply jewel changes.
+
+           jewel_stats = {
+                'fire_damage_+%': {
+                    'template': '{val}% increased Fire Damage',
+                    'val': 45
+                },
+                'energy_shield_recharge_rate_+%': {
+                    'template': '{val}% increased Energy Shield Recharge Rate',
+                    'val': 20
+                },
+                'base_energy_shield_leech_from_spell_damage_permyriad': {
+                    'template': '{val}% of spell damage leeched as energy shield',
+                    'val': 0.3
+                }
+           }
+        """
+
+        # do nothing for price of glory, at all
+        if effect['dn'] == 'Price of Glory':
+            return jewel_stats
+
+        UNSCALABLE_STATS = [
+            # Cloistered
+            'immune_to_elemental_ailments_while_on_consecrated_ground_at_devotion_threshold',
+            # Zealot
+            'gain_arcane_surge_on_hit_at_devotion_threshold',
+            # Add Onslaught
+            'onslaught_buff_duration_on_kill_ms'
+        ]
+
+        capture_val = r'(\d+\.?\d*)'
+        for k, v in effect['stats'].items():
+            stat_index = v['index'] - 1
+            stat_name = k
+            # if stat is unscalable and not in jewel stats, just add it as is with no formatting
+            if stat_name in UNSCALABLE_STATS:
+                if jewel_stats.get(stat_name) is None:
+                    jewel_stats[k] = {
+                        'template': effect['sd'][stat_index],
+                        # 'val': None
+                    }
+                else:
+                    continue
+            else:
+                # string in sd
+                sd = effect['sd'][stat_index]
+                # get val of stat
+                val = re.search(capture_val, sd).group(0)
+                val = float(val) if '.' in val else int(val)
+
+                if jewel_stats.get(stat_name) is None:
+                    template_str = re.sub(str(val), '{val}', sd, count=1)
+                    jewel_stats[stat_name] = {
+                        'template': template_str,
+                        'val': val
+                    }
+                else:
+                    jewel_stats[stat_name]['val'] += val
+
+        return jewel_stats
+
+    def add_mf_mod_effect_to_jewel_stats(self, jewel_stats: dict, mf_mods: List[str]) -> dict:
+        """ MF mods can be very powerful based on how much devotion the jewel is granting.
+            This function updates the jewel mods based on the devotion total and adds them to the mf mods.
+        """
+
+        # get devotion total
+        devotion = jewel_stats['base_devotion']['val']
+
+        # get coeff value
+        capture_val = r'(\d+\.?\d*)'
+
+        for i, mod in enumerate(mf_mods):
+            per_ten_devotion = re.search(capture_val, mod).group(0)
+            per_ten_numeric = float(per_ten_devotion) if '.' in per_ten_devotion else int(per_ten_devotion)
+
+            # these stats really are hard breakpoints at every 10 devotion
+            # so we truncate the result
+            coeff = math.floor(devotion / 10)
+            val = per_ten_numeric * coeff
+
+            template = re.sub(str(per_ten_devotion), '{val}', mod, count=1)
+            # get rid of the per 10 Devotion suffix, it's misleading
+            template = re.sub(' per 10 Devotion', '', template)
+
+            jewel_stats[f'mf_mod_{i + 1}'] = {
+                'template': template,
+                'val': val
+            }
+        
+        return jewel_stats
+
+    def apply_jewel_changes(self, jewel_drawing: DrawingRoot, timeless_jewel: ParsedJewel) -> Tuple[DrawingRoot, Dict]:
         """ Determines the changes that will apply to all nodes in the jewel, and applies them (as tooltips). """
 
+        jewel_stats = {}
         converter = je.NodeLookup()
         # first, the layups (keystone / small nodes)
         keystone = converter.lookup_jewel_keystone(timeless_jewel.general)
@@ -435,20 +537,54 @@ class JewelDrawing():
             elif node.node_type == 'small_passive' and timeless_jewel.jewel_type != 'Glorious Vanity':
                 effect, replaced = converter.lookup_small_node(timeless_jewel.jewel_type, node)
                 node.tooltip = self.make_tooltip(node, effect, replaced)
+                jewel_stats = self.add_effect_to_jewel_stats(jewel_stats, effect)
 
             elif node.node_type == 'notable' and timeless_jewel.jewel_type != 'Glorious Vanity':
                 effect, replaced = converter.lookup_notable_non_gv(timeless_jewel.jewel_type,
                                                                    int(timeless_jewel.seed),
                                                                    node)
-                
                 node.tooltip = self.make_tooltip(node, effect, replaced)
+                jewel_stats = self.add_effect_to_jewel_stats(jewel_stats, effect)
             else:
                 # any node type and Glorious Vanity
                 effect, replaced = converter.fast_lookup_node_gv(int(timeless_jewel.seed),
                                                                  node)
                 node.tooltip = self.make_tooltip(node, effect, replaced)
+                jewel_stats = self.add_effect_to_jewel_stats(jewel_stats, effect)
 
-        return jewel_drawing
+        # finally apply devotion to jewel mods
+        if timeless_jewel.jewel_type == 'Militant Faith':
+            jewel_stats = self.add_mf_mod_effect_to_jewel_stats(jewel_stats, timeless_jewel.mf_mods)
+
+        return jewel_drawing, jewel_stats
+
+    def jewel_stats_dict_to_list(self, jewel_stats: dict) -> List[str]:
+        """ Now that we have the stat totals we just need to apply them to the string template and order them.
+
+            While this is pretty arbitrary, I like sorting these stats by value descending.
+        """
+        
+        # get devotion total
+        # devotion = jewel_stats.get('base_devotion', {}).get('val', 0)
+
+        # sort the stats dict by val desc
+        sorted_stats = dict(sorted(jewel_stats.items(), key=lambda item: item[1].get('val', 0), reverse=True))
+
+        output = []
+        for k, v in sorted_stats.items():
+            # TODO - this would be a nice thing but I'm not parsing Unnatural Instinct right now
+            #        so this could be very misleading
+            # skip conditional devotion mods if we dont have enough devotion
+            # if '150 Devotion' in v['template'] and devotion < 150:
+            #     continue
+
+            # unscalable stat, just add the template to the list
+            if not v.get('val'):
+                output.append(v['template'])
+            else:
+                output.append(v['template'].format(val=v['val']))
+        
+        return output
 
     def make_drawing(self, api_response: dict, jewel: ParsedJewel) -> DrawingRoot:
         """ We need the api response for the list of allocated nodes and the jewel api id
@@ -457,17 +593,20 @@ class JewelDrawing():
             Returns the full json that the frontend will need to draw a cutout of the passive tree.
         """
         logger.debug(f'Begin drawing for jewel: {jewel.jewel_type} {jewel.seed} {jewel.general}')
-        api_jewel_id = None
-        for k, v in api_response['jewel_data'].items():
-            if v['type'] == 'JewelTimeless':
-                api_jewel_id = int(k)
-                break
+        # api_jewel_id = None
+        # for k, v in api_response['jewel_data'].items():
+        #     if v['type'] == 'JewelTimeless':
+        #         api_jewel_id = int(k)
+        #         break
         
         allocated_hashes = api_response['hashes']
 
-        drawing = self.make_pre_transform_drawing(api_jewel_id, allocated_hashes)
+        drawing = self.make_pre_transform_drawing(int(jewel.socket_id), allocated_hashes)
         logger.debug('Drawing base done.')
-        drawing = self.apply_jewel_changes(drawing, jewel)
+        drawing, jewel_stats = self.apply_jewel_changes(drawing, jewel)
         logger.debug('Jewel changes applied.')
-
+        jewel_stat_list = self.jewel_stats_dict_to_list(jewel_stats)
+        drawing.jewel_stats = jewel_stat_list
+        drawing.jewel_type = jewel.jewel_type
+        logger.debug('Stat totals applied.')
         return drawing

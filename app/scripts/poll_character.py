@@ -46,7 +46,7 @@ def get_leagues() -> List[League]:
                            hardcore=False,
                            league_start='2024-07-26 18:00:00+00:00',
                            league_end=None),
-                    League(name='Harcore Settlers',
+                    League(name='Hardcore Settlers',
                            hardcore=True,
                            league_start='2024-07-26 18:00:00+00:00',
                            league_end=None)]
@@ -85,9 +85,10 @@ def add_league(league: League) -> int:
             league_start=league.league_start,
             league_end=league.league_end
         )
-        upsert.on_conflict_do_update(
+        upsert = upsert.on_conflict_do_update(
             constraint='uk_league_name', set_={'league_end': league.league_end}
         )
+        print(upsert)
         result = conn.execute(upsert).first()
         conn.commit()
         return result['league_id']
@@ -116,14 +117,15 @@ def add_character(character: Character) -> int:
             character_level=character.character_level,
             account_name=character.account_name,
             ladder_rank=character.ladder_rank,
-            delve_depth=character.delve_depth
+            delve_depth=character.delve_depth,
+            last_scan=datetime.now().isoformat()
         )
-        upsert.on_conflict_do_update(
-            constraint='uk_character_ggg_id', set_={'ladder_rank': character.ladder_rank,
+        upsert = upsert.on_conflict_do_update(constraint='uk_character_ggg_id',
+                                              set_={'ladder_rank': character.ladder_rank,
                                                     'class_id': character.class_id,
                                                     'character_level': character.character_level,
-                                                    'delve_depth': character.delve_depth}
-        )
+                                                    'delve_depth': character.delve_depth,
+                                                    'last_scan': datetime.now().isoformat()})
         character_id = conn.execute(upsert).scalar()
         conn.commit()
         return character_id
@@ -150,14 +152,18 @@ def get_character_jewel(character_id: int) -> Jewel:
         if results is None:
             return None
         else:
-            return Jewel(results['jewel_id'],
-                         results['character_id'],
-                         results['jewel_type'],
-                         results['seed'],
-                         results['general'],
-                         mf_mod_int_to_strs(results['mf_mods'], LD_CACHE.mf_mod_map),
-                         results['drawing'],
-                         results['socket_id'])
+            if results['mf_mods'] is not None:
+                mf_strings = mf_mod_int_to_strs(results['mf_mods'], LD_CACHE.mf_mod_map)
+            else:
+                mf_strings = []
+            return Jewel(jewel_id=results['jewel_id'],
+                         character_id=results['character_id'],
+                         jewel_type=results['jewel_type'],
+                         seed=results['seed'],
+                         general=results['general'],
+                         mf_mods=mf_strings,
+                         drawing=results['drawing'],
+                         socket_id=results['socket_id'])
 
 
 def db_jewel_matches_equipped(db_jewel: Jewel, equipped_jewel: ParsedJewel) -> bool:
@@ -166,14 +172,13 @@ def db_jewel_matches_equipped(db_jewel: Jewel, equipped_jewel: ParsedJewel) -> b
 
     else:
         return db_jewel.jewel_type == equipped_jewel.jewel_type and \
-            db_jewel.seed == equipped_jewel.seed and \
+            int(db_jewel.seed) == int(equipped_jewel.seed) and \
             db_jewel.general == equipped_jewel.general and \
-            db_jewel.socket_id == equipped_jewel.socket_id and \
+            int(db_jewel.socket_id) == int(equipped_jewel.socket_id) and \
             set(db_jewel.mf_mods) == set(equipped_jewel.mf_mods) and \
-            db_jewel.drawing == equipped_jewel.drawing
-
-
-jd = JewelDrawing()
+            set(db_jewel.drawing['jewel_stats']) == set(dataclasses.asdict(equipped_jewel.drawing)['jewel_stats'])
+        # jewel stats matching is a weak implication that the allocated passives didn't change
+        # I can't compare the whole drawing because sub lists are unhashable to set
 
 
 def get_equipped_timeless_jewel_obj(response_body: dict) -> Optional[ParsedJewel]:
@@ -184,8 +189,10 @@ def get_equipped_timeless_jewel_obj(response_body: dict) -> Optional[ParsedJewel
             for jewel_socket in response_body['jewel_data']:
                 if response_body['jewel_data'][jewel_socket]['type'] == 'JewelTimeless':
                     jewel.socket_id = jewel_socket
+                    break
 
             try:
+                jd = JewelDrawing()
                 jewel.drawing = jd.make_drawing(api_response=response_body,
                                                 jewel=jewel)
             except Exception as e:
@@ -193,6 +200,7 @@ def get_equipped_timeless_jewel_obj(response_body: dict) -> Optional[ParsedJewel
                 jewel.drawing = {
                     'error': str(e)
                 }
+                return None
             
             return jewel
 
@@ -201,19 +209,22 @@ def get_equipped_timeless_jewel_obj(response_body: dict) -> Optional[ParsedJewel
 
 def update_jewel_scan_date(jewel_id: int):
     with get_engine().connect() as conn:
-        conn.execute(update(j_.c.scan_date).values(scan_date=datetime.now().isoformat())
-                     .where(j_.c._jewel_id == jewel_id))
+        conn.execute(update(j_).where(j_.c.jewel_id == jewel_id).values(scan_date=datetime.now().isoformat()))
         conn.commit()
 
 
 def add_jewel(jewel: Jewel, character_id: int):
     drawing_json = dataclasses.asdict(jewel.drawing)
+
+    mf_mods = None
+    if jewel.mf_mods:
+        mf_mods = mf_mod_strs_to_int(jewel.mf_mods, LD_CACHE.mf_mod_map)
     with get_engine().connect() as conn:
         conn.execute(insert(j_).values(character_id=character_id,
                                        jewel_type_id=LD_CACHE.jewel_type_ids[jewel.jewel_type],
                                        seed=jewel.seed,
                                        general_id=LD_CACHE.general_list[jewel.general],
-                                       mf_mods=mf_mod_strs_to_int(jewel.mf_mods, LD_CACHE.mf_mod_map),
+                                       mf_mods=mf_mods,
                                        socket_id=jewel.socket_id,
                                        drawing=drawing_json,
                                        scan_date=datetime.now().isoformat()))
@@ -244,6 +255,8 @@ def process_single_ladder_entry(ladder_entry: dict, league_id: int):
     account_name = ladder_entry['account']['name']
     character_name = ladder_entry['character']['name']
 
+    logger.debug(f'Processing entry for {character_name} - {account_name}...')
+
     try:
         response = api.get_passive_skills(account_name, character_name)
     except PrivateAccountException:
@@ -255,7 +268,7 @@ def process_single_ladder_entry(ladder_entry: dict, league_id: int):
     # is the character wearing a timeless jewel?
     parsed_jewel = get_equipped_timeless_jewel_obj(response.json())
 
-    if not parsed_jewel:
+    if parsed_jewel is None:
         logger.debug(f'Character {character_name} was not wearing a timeless jewel.')
         return
 
@@ -291,4 +304,8 @@ def poll_ladder():
         ladder_entries = get_league_ladder(league.name)
 
         for entry in ladder_entries:
-            process_single_ladder_entry(entry, league_id)
+            try:
+                if entry.get('public') is True:
+                    process_single_ladder_entry(entry, league_id)
+            except Exception as e:
+                logger.error(f'Failed process_single_ladder_entry: {e}')

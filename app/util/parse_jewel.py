@@ -9,7 +9,7 @@ class ParsedJewel:
     jewel_type: str
     seed: str
     general: str
-    mf_mods: Optional[List[str]]
+    mf_mods: List[str]
     socket_id: Optional[int] = None
     drawing: Optional[Dict] = None
 
@@ -37,7 +37,7 @@ def parse_jewel_json_object(jewel_object: dict, lut_data: LutData) -> ParsedJewe
     general = re.search(r'(\w+)$', jewel_object['explicitMods'][0].split('\n')[0]).group(1)
     assert general in general_map.keys()
 
-    mf_mods: None
+    mf_mods = []
     if jewel_type == 'Militant Faith':
         mf_mods = [jewel_object['explicitMods'][1], jewel_object['explicitMods'][2]]
     

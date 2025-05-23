@@ -50,7 +50,9 @@ class Node:
 
 @dataclass
 class DrawingRoot:
+    jewel_type: Optional[str]
     jewel_id: int
+    jewel_stats: Optional[List[str]]
     api_idx: int
     jewel_coords: Vertex
     radius: int
