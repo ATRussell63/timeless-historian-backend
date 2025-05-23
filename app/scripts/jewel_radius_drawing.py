@@ -38,6 +38,8 @@ class JewelDrawing():
     def node_type(self, node_obj) -> str:
         if not node_obj.get('group'):
             return 'cluster_passive'
+        elif 'classStartIndex' in node_obj.keys():
+            return 'class_start'
         elif node_obj.get('isKeystone'):
             return 'keystone'
         elif node_obj.get('isNotable'):
@@ -87,15 +89,16 @@ class JewelDrawing():
                 continue
 
             group = self.tree_data['groups'][str(node['group'])]
-            output[int(node['skill'])] = self.make_node(node, group)
+            output[int(node['skill'])] = self.make_node(node, group, False)
 
         return output
 
-    def make_node(self, node: dict, group: dict):
+    def make_node(self, node: dict, group: dict, allocated: bool):
         return Node(
             name=node['name'],
             node_id=int(node['skill']),
             node_type=self.node_type(node),
+            allocated=allocated,
             absolute_coords=self.get_passive_coords(node['skill']),
             relative_coords=None,
             mods=node.get('stats'),
@@ -267,6 +270,7 @@ class JewelDrawing():
         edge = StraightEdge(
             start=start_node.node_id,
             end=end_node.node_id,
+            allocated=start_node.allocated and end_node.allocated,
             edge_type='StraightEdge',
             ends=[
                 {
@@ -285,6 +289,7 @@ class JewelDrawing():
         edge = CurvedEdge(
             start=start_node.node_id,
             end=end_node.node_id,
+            allocated=start_node.allocated and end_node.allocated,
             edge_type='CurvedEdge',
             absolute_center=start_node.group_absolute_coords,
             relative_center=start_node.group_relative_coords,
@@ -306,9 +311,12 @@ class JewelDrawing():
                 output_obj = jewel_obj
                 break
 
-        output_obj.edges = []
+        # label all allocated nodes
+        for node in output_obj.nodes.values():
+            node.allocated = node.node_id in allocated_hashes
 
         # identify all edges we need to make
+        output_obj.edges = []
         edge_objects = []
         traversed_edges = set()
         traversed_nodes = set()
@@ -317,7 +325,7 @@ class JewelDrawing():
             try:
                 traversed_nodes.add(node_idx)
                 connected_nodes = set(list(int(x) for x in output_obj.nodes.get(node_idx).connected_nodes))
-                connected_nodes = list(connected_nodes & set(allocated_hashes))
+                # connected_nodes = list(connected_nodes & set(allocated_hashes))
             except KeyError:
                 # node_idx was outside of radius which means it's time to stop traversing
                 return
@@ -345,7 +353,10 @@ class JewelDrawing():
                     nCoords = self.get_passive_coords(int(node_json['skill']))
                     jX, jY = output_obj.jewel_coords.x, output_obj.jewel_coords.y
 
-                    end_node = self.make_node(node_json, group)
+                    # is the end node allocated?
+                    end_allocated = node_json['skill'] in allocated_hashes
+
+                    end_node = self.make_node(node_json, group, end_allocated)
                     end_node.relative_coords = Vertex(nCoords.x - jX, nCoords.y - jY)
                     end_node.group_relative_coords = Vertex(group['x'] - jX, group['y'] - jY)
 
@@ -367,14 +378,15 @@ class JewelDrawing():
         traverse(jewel_obj.jewel_id)
 
         # wrap up any remaining nodes that didn't get covered by the initial traversal
-        remaining_nodes = (set(jewel_obj.nodes.keys()) & set(allocated_hashes)) - traversed_nodes
+        # remaining_nodes = (set(jewel_obj.nodes.keys()) & set(allocated_hashes)) - traversed_nodes
+        remaining_nodes = set(jewel_obj.nodes.keys()) - traversed_nodes
         for node_idx in remaining_nodes:
             traverse(node_idx)
 
         jewel_obj.edges = edge_objects
 
         # finally filter out all nodes that aren't allocated
-        jewel_obj.nodes = {k: v for k, v in jewel_obj.nodes.items() if v.node_id in allocated_hashes}
+        # jewel_obj.nodes = {k: v for k, v in jewel_obj.nodes.items() if v.node_id in allocated_hashes}
         return jewel_obj
 
     def make_tooltip(self, node: Node, change_data: dict, replaced: bool) -> NodeTooltip:

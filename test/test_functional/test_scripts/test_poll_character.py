@@ -137,6 +137,11 @@ def test_process_single_ladder_entry(test_config, db_engine, clean_tables, add_s
         assert j.socket_id == 6
 
 
+def test_process_divayth_isolated(test_config, db_engine, delete_divayth_fyr):
+    settlers_id = 1
+    pc.process_single_ladder_entry(DIVAYTH_FYR, settlers_id)
+
+
 def test_process_ten_ladder_entries(test_config, db_engine, clean_tables, add_settlers_league):
     pc.poll_ladder()
 

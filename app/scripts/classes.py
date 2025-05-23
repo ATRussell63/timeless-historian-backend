@@ -34,6 +34,7 @@ class Node:
     name: str
     node_id: int
     node_type: str
+    allocated: bool
     absolute_coords: Vertex
     relative_coords: Optional[Vertex]
     mods: Optional[List[str]]
@@ -64,6 +65,7 @@ class DrawingRoot:
 class StraightEdge:
     start: int
     end: int
+    allocated: bool
     edge_type: str
     ends: List[Dict[str, Vertex]]
 
@@ -72,6 +74,7 @@ class StraightEdge:
 class CurvedEdge:
     start: int
     end: int
+    allocated: bool
     edge_type: str
     # might cause problems
     absolute_center: Vertex

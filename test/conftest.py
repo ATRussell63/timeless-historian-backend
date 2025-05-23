@@ -2,7 +2,7 @@ import logging
 import pytest
 from app.db import get_engine
 from app.models import c_, j_, l_
-from sqlalchemy import delete
+from sqlalchemy import delete, select
 from sqlalchemy.sql import Delete
 from app.create_app import setup_app
 
@@ -52,6 +52,17 @@ def clean_tables(db_engine):
         dl_result = conn.execute(dl)
         logger.debug(f'Deleted {dl_result.rowcount} entries from `league`')
 
+        conn.commit()
+
+
+@pytest.fixture()
+def delete_divayth_fyr(db_engine):
+    with db_engine.connect() as conn:
+        # get his character id
+        q = select(c_.c.character_id).where(c_.c.character_name == 'DIVAYTH_FYR')
+        c_id = conn.execute(q).scalar()
+        conn.execute(delete(j_).where(j_.c.character_id == c_id))
+        conn.execute(delete(c_).where(c_.c.character_id == c_id))
         conn.commit()
 
 

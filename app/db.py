@@ -1,5 +1,6 @@
-from sqlalchemy.engine import create_engine, URL, Engine
+from sqlalchemy.engine import create_engine, URL, Engine, Row
 from sqlalchemy.pool import QueuePool
+from typing import List, Dict
 
 from app.app_config import get_config
 
@@ -34,3 +35,8 @@ def init_engine() -> Engine:
                            pool_pre_ping=True,
                            echo=config.SQLALCHEMY_ECHO)
     return engine
+
+
+def dict_results(results: List[Row]) -> List[Dict]:
+    """Return result rows as dicts"""
+    return [row._asdict() for row in results]
