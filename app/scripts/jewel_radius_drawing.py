@@ -560,20 +560,26 @@ class JewelDrawing():
             elif node.node_type == 'small_passive' and timeless_jewel.jewel_type != 'Glorious Vanity':
                 effect, replaced = converter.lookup_small_node(timeless_jewel.jewel_type, node)
                 node.tooltip = self.make_tooltip(node, effect, replaced)
-                jewel_stats = self.add_effect_to_jewel_stats(jewel_stats, effect)
+
+                if node.allocated:
+                    jewel_stats = self.add_effect_to_jewel_stats(jewel_stats, effect)
 
             elif node.node_type == 'notable' and timeless_jewel.jewel_type != 'Glorious Vanity':
                 effect, replaced = converter.lookup_notable_non_gv(timeless_jewel.jewel_type,
                                                                    int(timeless_jewel.seed),
                                                                    node)
                 node.tooltip = self.make_tooltip(node, effect, replaced)
-                jewel_stats = self.add_effect_to_jewel_stats(jewel_stats, effect)
+
+                if node.allocated:
+                    jewel_stats = self.add_effect_to_jewel_stats(jewel_stats, effect)
             else:
                 # any node type and Glorious Vanity
                 effect, replaced = converter.fast_lookup_node_gv(int(timeless_jewel.seed),
                                                                  node)
                 node.tooltip = self.make_tooltip(node, effect, replaced)
-                jewel_stats = self.add_effect_to_jewel_stats(jewel_stats, effect)
+
+                if node.allocated:
+                    jewel_stats = self.add_effect_to_jewel_stats(jewel_stats, effect)
 
         # finally apply devotion to jewel mods
         if timeless_jewel.jewel_type == 'Militant Faith':

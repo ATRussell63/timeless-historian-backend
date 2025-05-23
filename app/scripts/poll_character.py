@@ -214,7 +214,6 @@ def update_jewel_scan_date(jewel_id: int):
 
 
 def add_jewel(jewel: Jewel, character_id: int):
-    drawing_json = dataclasses.asdict(jewel.drawing)
 
     mf_mods = None
     if jewel.mf_mods:
@@ -226,7 +225,7 @@ def add_jewel(jewel: Jewel, character_id: int):
                                        general_id=LD_CACHE.general_list[jewel.general],
                                        mf_mods=mf_mods,
                                        socket_id=jewel.socket_id,
-                                       drawing=drawing_json,
+                                       drawing=jewel.drawing,
                                        scan_date=datetime.now().isoformat()))
         conn.commit()
 
@@ -271,6 +270,41 @@ def process_single_ladder_entry(ladder_entry: dict, league_id: int):
     if parsed_jewel is None:
         logger.debug(f'Character {character_name} was not wearing a timeless jewel.')
         return
+
+    # convert jewel to dict
+    parsed_jewel.drawing = dataclasses.asdict(parsed_jewel.drawing)
+    # trim down jewel data
+    #  - this is a pretty damn stupid step but I want to see how much I can shrink the response size
+
+    def cull_edges(drawing):
+        for edge in drawing['edges']:
+            if edge['edge_type'] == 'CurvedEdge':
+                edge.pop('absolute_center')
+                edge.pop('arc_len')
+            else:
+                edge['ends'][0].pop('absolute')
+                edge['ends'][1].pop('absolute')
+        
+        return drawing
+
+    def cull_nodes(drawing):
+        for node in drawing['nodes'].values():
+            node.pop('absolute_coords')
+            node.pop('group_id')
+            node.pop('group_relative_coords')
+            node.pop('group_absolute_coords')
+            node.pop('connected_nodes')
+            # jesus christ man
+            node.pop('reminder')
+            node.pop('orbit')
+            node.pop('orbitIndex')
+            node.pop('orbitRadius')
+            node.pop('mods')
+        
+        return drawing
+    
+    parsed_jewel.drawing = cull_edges(parsed_jewel.drawing)
+    parsed_jewel.drawing = cull_nodes(parsed_jewel.drawing)
 
     character = Character(league_id,
                           ladder_entry['character']['id'],
