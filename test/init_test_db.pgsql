@@ -117,6 +117,7 @@ create table jewel(
     mf_mods integer null,
     socket_id integer not null,
     drawing json not null,
+    initial_scan_date timestamp with time zone,
     scan_date timestamp with time zone
 );
 

@@ -62,7 +62,9 @@ def query_jewel_search(search_data: SearchRequest):
                j_.c.drawing,
                j_.c.socket_id,
                sl_.c.pob_name.label('socket_name'),
-               sl_.c.description.label('socket_description')) \
+               sl_.c.description.label('socket_description'),
+               (func.floor(func.extract('epoch', j_.c.initial_scan_date - l_.c.league_start) / (7 * 24 * 60 * 60)) + 1).label('start_week'),
+               (func.floor(func.extract('epoch', j_.c.scan_date - l_.c.league_start) / (7 * 24 * 60 * 60)) + 1).label('end_week')) \
         .join_from(j_, c_, j_.c.character_id == c_.c.character_id) \
         .join(jtl_, jtl_.c.jewel_type_id == j_.c.jewel_type_id) \
         .join(gl_, gl_.c.general_id == j_.c.general_id) \

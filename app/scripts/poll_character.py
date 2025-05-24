@@ -207,9 +207,9 @@ def get_equipped_timeless_jewel_obj(response_body: dict) -> Optional[ParsedJewel
     return None
 
 
-def update_jewel_scan_date(jewel_id: int):
+def update_jewel_scan_date_and_drawing(jewel_id: int, jewel_drawing: dict):
     with get_engine().connect() as conn:
-        conn.execute(update(j_).where(j_.c.jewel_id == jewel_id).values(scan_date=datetime.now().isoformat()))
+        conn.execute(update(j_).where(j_.c.jewel_id == jewel_id).values(scan_date=datetime.now().isoformat(), drawing=jewel_drawing))
         conn.commit()
 
 
@@ -226,6 +226,7 @@ def add_jewel(jewel: Jewel, character_id: int):
                                        mf_mods=mf_mods,
                                        socket_id=jewel.socket_id,
                                        drawing=jewel.drawing,
+                                       initial_scan_date=datetime.now().isoformat(),
                                        scan_date=datetime.now().isoformat()))
         conn.commit()
 
@@ -322,7 +323,7 @@ def process_single_ladder_entry(ladder_entry: dict, league_id: int):
     db_jewel = get_character_jewel(character_id)
     if db_jewel_matches_equipped(db_jewel, parsed_jewel):
         # just mark as scanned
-        update_jewel_scan_date(db_jewel.jewel_id)
+        update_jewel_scan_date_and_drawing(db_jewel.jewel_id, parsed_jewel.drawing)
     else:
         # add new jewel
         add_jewel(parsed_jewel, character_id)

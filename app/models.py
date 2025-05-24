@@ -44,6 +44,7 @@ j_ = jewel = Table(
     Column('mf_mods', INTEGER),
     Column('socket_id', INTEGER),
     Column('drawing', JSON),
+    Column('initial_scan_date', TIMESTAMP),
     Column('scan_date', TIMESTAMP)
 )
 
