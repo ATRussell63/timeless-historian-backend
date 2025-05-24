@@ -71,3 +71,12 @@ mml_ = mf_mod_lut = Table(
     Column('mod_bit', INTEGER),
     Column('mod_text', Text),
 )
+
+sl_ = socket_lut = Table(
+    'socket_lut',
+    metadata_obj,
+    Column('socket_id', INTEGER, primary_key=True),
+    Column('node_id', INTEGER),
+    Column('pob_name', Text),
+    Column('description', Text)
+)

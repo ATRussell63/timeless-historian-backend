@@ -5,7 +5,7 @@ import copy
 from sqlalchemy.engine import Row
 import logging
 from app.db import get_engine
-from app.models import c_, l_, j_, jtl_, gl_, mml_, cl_
+from app.models import c_, l_, j_, jtl_, gl_, mml_, cl_, sl_
 from sqlalchemy.sql import select, func, distinct, alias, table, column
 from sqlalchemy import text, cast, literal_column, and_
 from sqlalchemy.dialects.postgresql import INTEGER, TEXT
@@ -53,18 +53,22 @@ def query_jewel_search(search_data: SearchRequest):
                c_.c.account_name,
                c_.c.ggg_id,
                c_.c.character_level,
-               cl_.c.ascendancy_class_name.label('class_name'),
+               cl_.c.ascendancy_class_name.label('ascendancy_name'),
+               cl_.c.base_class_name.label('base_class'),
                jtl_.c.type_name.label('jewel_type'),
                j_.c.seed,
                gl_.c.general_name.label('general'),
                j_.c.mf_mods,
                j_.c.drawing,
-               j_.c.socket_id) \
+               j_.c.socket_id,
+               sl_.c.pob_name.label('socket_name'),
+               sl_.c.description.label('socket_description')) \
         .join_from(j_, c_, j_.c.character_id == c_.c.character_id) \
         .join(jtl_, jtl_.c.jewel_type_id == j_.c.jewel_type_id) \
         .join(gl_, gl_.c.general_id == j_.c.general_id) \
         .join(l_, l_.c.league_id == c_.c.league_id) \
         .join(cl_, cl_.c.class_id == c_.c.class_id) \
+        .join(sl_, sl_.c.socket_id == j_.c.socket_id) \
         .where((j_.c.seed == search_data.seed) & (jtl_.c.type_name == search_data.jewel_type)) \
         .order_by(c_.c.ggg_id, j_.c.scan_date.desc())
 
@@ -102,6 +106,14 @@ def format_jewel_search_results(search_results: List[Row], search_data: SearchRe
         formatted_row = copy.deepcopy(dict(row))
         
         formatted_row['general_match'] = formatted_row['general'] == search_data.general
+        formatted_row['socket'] = {
+            'id': formatted_row['socket_id'],
+            'name': formatted_row['socket_name'],
+            'description': formatted_row['socket_description']
+        }
+        formatted_row.pop('socket_id')
+        formatted_row.pop('socket_name')
+        formatted_row.pop('socket_description')
 
         if not output.get(row['league_name']):
             output[row['league_name']] = []
