@@ -5,7 +5,7 @@ import copy
 from sqlalchemy.engine import Row
 import logging
 from app.db import get_engine
-from app.models import c_, l_, j_, jtl_, gl_, mml_, cl_, sl_
+from app.models import c_, l_, j_, jtl_, gl_, mml_, cl_, sl_, v_
 from sqlalchemy.sql import select, func, distinct, alias, table, column
 from sqlalchemy import text, cast, literal_column, and_
 from sqlalchemy.dialects.postgresql import INTEGER, TEXT
@@ -49,10 +49,13 @@ def query_jewel_search(search_data: SearchRequest):
     # but I might change my mind later about this
 
     q = select(l_.c.league_name,
+               l_.c.league_id,
+               l_.c.hardcore,
                c_.c.character_name,
                c_.c.account_name,
                c_.c.ggg_id,
                c_.c.character_level,
+               c_.c.ladder_rank,
                cl_.c.ascendancy_class_name.label('ascendancy_name'),
                cl_.c.base_class_name.label('base_class'),
                jtl_.c.type_name.label('jewel_type'),
@@ -63,6 +66,7 @@ def query_jewel_search(search_data: SearchRequest):
                j_.c.socket_id,
                sl_.c.pob_name.label('socket_name'),
                sl_.c.description.label('socket_description'),
+               v_.c.nickname.label('vip'),
                (func.floor(func.extract('epoch', j_.c.initial_scan_date - l_.c.league_start) / (7 * 24 * 60 * 60)) + 1).label('start_week'),
                (func.floor(func.extract('epoch', j_.c.scan_date - l_.c.league_start) / (7 * 24 * 60 * 60)) + 1).label('end_week')) \
         .join_from(j_, c_, j_.c.character_id == c_.c.character_id) \
@@ -71,6 +75,7 @@ def query_jewel_search(search_data: SearchRequest):
         .join(l_, l_.c.league_id == c_.c.league_id) \
         .join(cl_, cl_.c.class_id == c_.c.class_id) \
         .join(sl_, sl_.c.socket_id == j_.c.socket_id) \
+        .join(v_, v_.c.account_name == c_.c.account_name, isouter=True) \
         .where((j_.c.seed == search_data.seed) & (jtl_.c.type_name == search_data.jewel_type)) \
         .order_by(c_.c.ggg_id, j_.c.scan_date.desc())
 
@@ -118,8 +123,15 @@ def format_jewel_search_results(search_results: List[Row], search_data: SearchRe
         formatted_row.pop('socket_description')
 
         if not output.get(row['league_name']):
-            output[row['league_name']] = []
+            output[row['league_name']] = {
+                'league_id': row['league_id'],
+                'hardcore': row['hardcore'],
+                'jewels': []
+            }
 
-        output[row['league_name']].append(formatted_row)
+        formatted_row.pop('league_id')
+        formatted_row.pop('hardcore')
+
+        output[row['league_name']]['jewels'].append(formatted_row)
 
     return output

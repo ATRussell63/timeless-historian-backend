@@ -151,6 +151,51 @@ insert into socket_lut (socket_id, node_id, pob_name, description) values
 (19, 33631, 'Eternal Youth', 'Marauder/Templar Mid-tree'),
 (20, 21984, 'Eldritch Battery', 'Mana Cluster Socket');
 
+create table vip_account(
+    vip_id smallserial primary key,
+    account_name text not null,
+    nickname text not null
+);
+
+insert into vip_account (nickname, account_name) values
+('Uber Dan', 'PoEDan79#7719'),
+('dslily', 'dslily#1229'),
+('Alkaizerx', 'AlkaizerX#7789'),
+('Jungroan', 'Jezie#4328'),
+('Zizaran', 'Zizaran#6796'),
+('steelmage', 'Steelmage#5874'),
+('Ruetoo', 'RueRue#0023'),
+('CaptainLance9', 'CaptainLance9#7822'),
+('onemanaleft', '1_mana_left#5237'),
+('Pohx', 'Pohx#1588'),
+('Quantrik', 'Quantrik#5397'),
+('MAGEFIST', 'MAGEFISTtv#5398'),
+('Mathil', 'Mathil#3128'),
+('imexile', 'nickexile11#5507'),
+('cARN', 'CARNDARAK#3163'),
+('Palsteron', 'Palsteron#4374'),
+('ventrua', 'Ventrua#4384'),
+('Waggle', 'Dsfarblarwaggle#7862'),
+('BalorMage', 'Balormage#1553'),
+('Kripparrian', 'Krippers#4771'),
+('Ben_', 'Ben_#4007'),
+('tytykiller', 'Tytykiller#6866'),
+('Empyrian', 'Empyrian#4298'),
+('bazukatank', 'm01t4#7648'),
+('snapow', 'Snap#5863'),
+-- ('rasmus', 'Rasmusthenoob#6122'),
+('Márkusz', 'Márkusz#4682'),
+-- insert rest of empy goons
+('fubgun', 'fubgun#1755'),
+('spicysushi', 'TwitchTVSpicysushi#7614'),
+('crouching_tuna', 'Crouching_Tuna#1733'),
+('RaizQT', 'RaizQT#2387'),
+('nugiyen', 'nugiyen#7787'),
+('DatModz', 'Ladilas#5078'),
+('CuteDog_', 'CuteDog_#0896'),
+('STEVE', 'turdtwisterx#4882');
+
+
 
 -- the machines have won, it's over
 CREATE OR REPLACE FUNCTION get_mod_texts(sum_val integer)

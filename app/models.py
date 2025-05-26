@@ -81,3 +81,11 @@ sl_ = socket_lut = Table(
     Column('pob_name', Text),
     Column('description', Text)
 )
+
+v_ = vip_account = Table(
+    'vip_account',
+    metadata_obj,
+    Column('vip_id', SMALLINT, primary_key=True),
+    Column('account_name', Text),
+    Column('nickname', Text)
+)
