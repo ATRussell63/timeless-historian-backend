@@ -250,6 +250,16 @@ class JewelDrawing():
         # find the rotation from arc start
         rotation = 360 * (start_index / maxOrbits)
         return rotation
+    
+    def truncate_float(self, number, decimal_places):
+        factor = 10**decimal_places
+        return math.floor(number * factor) / factor
+    
+    def truncate_vert(self, vert: Vertex, decimal_places):
+        return Vertex(
+            x=self.truncate_float(vert.x, decimal_places),
+            y=self.truncate_float(vert.y, decimal_places)
+        )
 
     def make_straight_edge(self, start_node: Node, end_node: Node) -> StraightEdge:
         """
@@ -285,12 +295,12 @@ class JewelDrawing():
             edge_type='StraightEdge',
             ends=[
                 {
-                    'absolute': start_node.absolute_coords,
-                    'relative': start_node.relative_coords
+                    'absolute': self.truncate_vert(start_node.absolute_coords, 2),
+                    'relative': self.truncate_vert(start_node.relative_coords, 2),
                 },
                 {
-                    'absolute': end_node.absolute_coords,
-                    'relative': end_node.relative_coords
+                    'absolute': self.truncate_vert(end_node.absolute_coords, 2),
+                    'relative': self.truncate_vert(end_node.relative_coords, 2)
                 }
             ]
         )
@@ -302,14 +312,14 @@ class JewelDrawing():
             end=end_node.node_id,
             allocated=start_node.allocated and end_node.allocated,
             edge_type='CurvedEdge',
-            absolute_center=start_node.group_absolute_coords,
-            relative_center=start_node.group_relative_coords,
-            rotation=self.calc_arc_rotation(start_node.orbitIndex,
+            absolute_center=self.truncate_vert(start_node.group_absolute_coords, 2),
+            relative_center=self.truncate_vert(start_node.group_relative_coords, 2),
+            rotation=self.truncate_float((self.calc_arc_rotation(start_node.orbitIndex,
                                             end_node.orbitIndex,
-                                            max_orbits, True),
-            arc_len=self.calc_arc_len(start_node, end_node, start_node.orbitRadius, max_orbits),
-            radius=start_node.orbitRadius,
-            angle=self.calc_angle(start_node, end_node, start_node.orbitRadius, max_orbits)
+                                            max_orbits, True)), 2),
+            arc_len=self.truncate_float(self.calc_arc_len(start_node, end_node, start_node.orbitRadius, max_orbits), 2),
+            radius=self.truncate_float(start_node.orbitRadius, 2),
+            angle=self.truncate_float(self.calc_angle(start_node, end_node, start_node.orbitRadius, max_orbits), 2)
         )
         return edge
 

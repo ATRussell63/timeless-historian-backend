@@ -51,6 +51,7 @@ def query_jewel_search(search_data: SearchRequest):
     q = select(l_.c.league_name,
                l_.c.league_id,
                l_.c.hardcore,
+               (func.now().between(l_.c.league_start, l_.c.league_end).label('league_active')),
                c_.c.character_name,
                c_.c.account_name,
                c_.c.ggg_id,
@@ -77,7 +78,7 @@ def query_jewel_search(search_data: SearchRequest):
         .join(sl_, sl_.c.socket_id == j_.c.socket_id) \
         .join(v_, v_.c.account_name == c_.c.account_name, isouter=True) \
         .where((j_.c.seed == search_data.seed) & (jtl_.c.type_name == search_data.jewel_type)) \
-        .order_by(c_.c.ggg_id, j_.c.scan_date.desc())
+        .order_by(c_.c.ggg_id, j_.c.scan_date.desc(), l_.c.league_id)
 
     if search_data.jewel_type == 'Militant Faith':
         
@@ -126,11 +127,13 @@ def format_jewel_search_results(search_results: List[Row], search_data: SearchRe
             output[row['league_name']] = {
                 'league_id': row['league_id'],
                 'hardcore': row['hardcore'],
+                'is_active': row['league_active'],
                 'jewels': []
             }
 
         formatted_row.pop('league_id')
         formatted_row.pop('hardcore')
+        formatted_row.pop('league_active')
 
         output[row['league_name']]['jewels'].append(formatted_row)
 
