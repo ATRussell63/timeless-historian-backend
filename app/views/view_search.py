@@ -39,6 +39,6 @@ def view_search():
         raw_search_results = perform_jewel_search(request_data)
         response_body['results'] = format_jewel_search_results(raw_search_results, request_data)
     except Exception as e:
-        return jsonify({'error': f'{e}'}, 500)
+        return jsonify({'error': f'{e}'}), 500
 
-    return jsonify(response_body, 200)
+    return jsonify(response_body), 200

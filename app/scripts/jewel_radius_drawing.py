@@ -315,8 +315,8 @@ class JewelDrawing():
             absolute_center=self.truncate_vert(start_node.group_absolute_coords, 2),
             relative_center=self.truncate_vert(start_node.group_relative_coords, 2),
             rotation=self.truncate_float((self.calc_arc_rotation(start_node.orbitIndex,
-                                            end_node.orbitIndex,
-                                            max_orbits, True)), 2),
+                                                                 end_node.orbitIndex,
+                                                                 max_orbits, True)), 2),
             arc_len=self.truncate_float(self.calc_arc_len(start_node, end_node, start_node.orbitRadius, max_orbits), 2),
             radius=self.truncate_float(start_node.orbitRadius, 2),
             angle=self.truncate_float(self.calc_angle(start_node, end_node, start_node.orbitRadius, max_orbits), 2)

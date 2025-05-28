@@ -47,6 +47,16 @@ def view_test():
         response['results'] = format_jewel_search_results(data, bogus_search_params)
 
     except Exception as e:
-        return jsonify({'error': f'{e}'}, 500)
+        return jsonify({'error': f'{e}'}), 500
 
-    return jsonify(response, 200)
+    return jsonify(response), 200
+
+
+# TODO - delete this shit later or something
+@test_view.route('/test/manual', methods=['GET', 'POST'])
+def view_test_manual_data():
+    """
+        Return a manual subset of the data.
+    """
+    from app.views.view_helpers.view_test_view_helpers import all_data_response
+    return jsonify(all_data_response), 200
