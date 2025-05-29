@@ -657,11 +657,10 @@ class JewelDrawing():
             # measure 'starting from bottom left'
             y1 = edge.ends[0]['relative'].y
             y2 = edge.ends[1]['relative'].y
-            deltaY = max(y1, y2) - min(y1, y2)
-
+            deltaY = y2 - y1
             x1 = edge.ends[0]['relative'].x
             x2 = edge.ends[1]['relative'].x
-            deltaX = max(x1, x2) - min(x1, x2)
+            deltaX = x2 - x1
 
             if isclose(deltaX, 0):
                 return inf
