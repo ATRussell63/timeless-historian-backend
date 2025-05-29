@@ -173,14 +173,14 @@ class JewelDrawing():
                 # apply relative coords
                 if node.node_id != jewel.jewel_id:
                     output[jewel.jewel_id].nodes[node.node_id].relative_coords = \
-                        node.absolute_coords - jewel.jewel_coords
+                        self.truncate_vert(node.absolute_coords - jewel.jewel_coords, 2)
                 else:
                     output[jewel.jewel_id].nodes[node.node_id].relative_coords = Vertex(0, 0)
 
                 # update group with relative coords
                 group_absolute_coords = output[jewel.jewel_id].nodes[node.node_id].group_absolute_coords
                 output[jewel.jewel_id].nodes[node.node_id].group_relative_coords = \
-                    group_absolute_coords - jewel.jewel_coords
+                    self.truncate_vert(group_absolute_coords - jewel.jewel_coords, 2)
 
         return output
 
@@ -378,8 +378,8 @@ class JewelDrawing():
                     end_allocated = node_json['skill'] in allocated_hashes
 
                     end_node = self.make_node(node_json, group, end_allocated)
-                    end_node.relative_coords = Vertex(nCoords.x - jX, nCoords.y - jY)
-                    end_node.group_relative_coords = Vertex(group['x'] - jX, group['y'] - jY)
+                    end_node.relative_coords = self.truncate_vert(Vertex(nCoords.x - jX, nCoords.y - jY), 2)
+                    end_node.group_relative_coords = self.truncate_vert(Vertex(group['x'] - jX, group['y'] - jY), 2)
 
                 start_node = output_obj.nodes[node_idx]
 
