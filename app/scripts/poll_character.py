@@ -274,19 +274,6 @@ def process_single_ladder_entry(ladder_entry: dict, league_id: int):
 
     # convert jewel to dict
     parsed_jewel.drawing = dataclasses.asdict(parsed_jewel.drawing)
-    # trim down jewel data
-    #  - this is a pretty damn stupid step but I want to see how much I can shrink the response size
-
-    # def cull_edges(drawing):
-    #     for edge in drawing['edges']:
-    #         if edge['edge_type'] == 'CurvedEdge':
-    #             edge.pop('absolute_center')
-    #             edge.pop('arc_len')
-    #         else:
-    #             edge['ends'][0].pop('absolute')
-    #             edge['ends'][1].pop('absolute')
-        
-    #     return drawing
 
     def cull_nodes(drawing):
         for node in drawing['nodes'].values():
@@ -304,8 +291,71 @@ def process_single_ladder_entry(ladder_entry: dict, league_id: int):
         
         return drawing
     
-    # parsed_jewel.drawing = cull_edges(parsed_jewel.drawing)
+    def minimize_node_field_names(node):
+        field_map = {
+            'name': 'n',
+            'node_id': 'i',
+            'node_type': 't',
+            'allocated': 'a',
+            'relative_coords': 'c',
+            'tooltip': 'l'
+        }
+        
+        for k, v in field_map.items():
+            node[v] = node[k]
+            node.pop(k)
+        return node
+
+    def minimize_straight_edge_field_names(edge):
+        # field_map = {
+        #     'allocated': 'a',
+        #     'ends': 'c'
+        # }
+        new_edge = {
+            'a': edge['allocated'],
+            'c': [
+                {
+                    'x': edge['ends'][0]['relative']['x'],
+                    'y': edge['ends'][0]['relative']['y'],
+                },
+                {
+                    'x': edge['ends'][1]['relative']['x'],
+                    'y': edge['ends'][1]['relative']['y'],
+                }
+            ]
+        }
+        return new_edge
+
+    def minimize_curved_edge_field_names(edge):
+        field_map = {
+            'allocated': 'a',
+            'relative_center': 'c',
+            'rotation': 'o',
+            'radius': 'r',
+            'angle': 't'
+        }
+        for k, v in field_map.items():
+            edge[v] = edge[k]
+            edge.pop(k)
+        return edge
+
+    # trim down jewel data
     parsed_jewel.drawing = cull_nodes(parsed_jewel.drawing)
+    parsed_jewel.drawing.pop('jewel_coords')
+    
+    for node in parsed_jewel.drawing['nodes']:
+        parsed_jewel.drawing['nodes'][node] = minimize_node_field_names(parsed_jewel.drawing['nodes'][node])
+    
+    new_straight_edges = []
+    for edge in parsed_jewel.drawing['straight_edges']:
+        new_straight_edges.append(minimize_straight_edge_field_names(edge))
+    
+    new_curved_edges = []
+    for edge in parsed_jewel.drawing['curved_edges']:
+        new_curved_edges.append(minimize_curved_edge_field_names(edge))
+    
+    parsed_jewel.drawing['straight_edges'] = new_straight_edges
+    parsed_jewel.drawing['curved_edges'] = new_curved_edges
 
     character = Character(league_id,
                           ladder_entry['character']['id'],

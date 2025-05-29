@@ -773,14 +773,6 @@ class JewelDrawing():
 
         return drawing
 
-    def minimize_field_names(self, drawing: DrawingRoot) -> DrawingRoot:
-        """ We've truncated all the values, we've merged all the objects we can,
-            the last thing we can do to make the drawing smaller is by reducing the field
-            names down to a single character.
-        """
-        # reminder to delete node_id from straight edge ends
-        return drawing
-
     def make_drawing(self, api_response: dict, jewel: ParsedJewel) -> DrawingRoot:
         """ We need the api response for the list of allocated nodes and the jewel api id
             (since we're not saving that one in the db).
@@ -799,5 +791,4 @@ class JewelDrawing():
         drawing.jewel_stats = jewel_stat_list
         drawing.jewel_type = jewel.jewel_type
         drawing = self.truncate_values(drawing)
-        drawing = self.minimize_field_names(drawing)
         return drawing
