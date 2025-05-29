@@ -2,10 +2,13 @@ from dataclasses import dataclass
 from typing import Dict, List, Optional
 
 
-@dataclass
-class Vertex():
+@dataclass(frozen=True)
+class Vertex:
     x: float
     y: float
+
+    def __eq__(self, value):
+        return value.x == self.x and value.y == self.y
 
     def __sub__(self, other):
         if not isinstance(other, Vertex):
@@ -50,6 +53,21 @@ class Node:
 
 
 @dataclass
+class StraightEdge:
+    allocated: bool
+    ends: List[Dict]
+
+
+@dataclass
+class CurvedEdge:
+    allocated: bool
+    relative_center: Vertex
+    rotation: float
+    radius: float
+    angle: float
+
+
+@dataclass
 class DrawingRoot:
     jewel_type: Optional[str]
     jewel_id: int
@@ -58,31 +76,8 @@ class DrawingRoot:
     jewel_coords: Vertex
     radius: int
     nodes: Dict[int, Node]
-    edges: Optional[List]
-
-
-@dataclass
-class StraightEdge:
-    start: int
-    end: int
-    allocated: bool
-    edge_type: str
-    ends: List[Dict[str, Vertex]]
-
-
-@dataclass
-class CurvedEdge:
-    start: int
-    end: int
-    allocated: bool
-    edge_type: str
-    # might cause problems
-    absolute_center: Vertex
-    relative_center: Vertex
-    rotation: float
-    arc_len: float
-    radius: float
-    angle: float
+    curved_edges: Optional[List[CurvedEdge]]
+    straight_edges: Optional[List[StraightEdge]]
 
 
 @dataclass

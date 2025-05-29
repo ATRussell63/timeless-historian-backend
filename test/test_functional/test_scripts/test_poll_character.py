@@ -138,8 +138,13 @@ def test_process_single_ladder_entry(test_config, db_engine, clean_tables, add_s
 
 
 def test_process_divayth_isolated(test_config, db_engine, delete_divayth_fyr):
-    settlers_id = 1
+    settlers_id = 16
     pc.process_single_ladder_entry(DIVAYTH_FYR, settlers_id)
+
+
+def test_process_steve_isolated(test_config, db_engine, delete_steve):
+    settlers_id = 16
+    pc.process_single_ladder_entry(STEVE, settlers_id)
 
 
 def test_process_ten_ladder_entries(test_config, db_engine, clean_tables, add_settlers_league):

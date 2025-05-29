@@ -2,6 +2,9 @@ import math
 import json
 import re
 from typing import List, Dict, Tuple
+from collections import defaultdict, deque
+from math import isclose
+from numpy import inf
 import copy
 import logging
 import app.scripts.get_jewel_effects as je
@@ -146,7 +149,8 @@ class JewelDrawing():
                     jewel_coords=absolute_coords,
                     radius=self.TIMELESS_JEWEL_RADIUS,
                     nodes={},
-                    edges=[]
+                    curved_edges=[],
+                    straight_edges=[]
                 )
             except KeyError:
                 continue
@@ -173,14 +177,14 @@ class JewelDrawing():
                 # apply relative coords
                 if node.node_id != jewel.jewel_id:
                     output[jewel.jewel_id].nodes[node.node_id].relative_coords = \
-                        self.truncate_vert(node.absolute_coords - jewel.jewel_coords, 2)
+                        node.absolute_coords - jewel.jewel_coords
                 else:
                     output[jewel.jewel_id].nodes[node.node_id].relative_coords = Vertex(0, 0)
 
                 # update group with relative coords
                 group_absolute_coords = output[jewel.jewel_id].nodes[node.node_id].group_absolute_coords
                 output[jewel.jewel_id].nodes[node.node_id].group_relative_coords = \
-                    self.truncate_vert(group_absolute_coords - jewel.jewel_coords, 2)
+                    group_absolute_coords - jewel.jewel_coords
 
         return output
 
@@ -197,13 +201,13 @@ class JewelDrawing():
                    abs(a - (b + m)),
                    abs((a + m) - b))
 
-    def calc_arc_len(self, a: Node, b: Node, r: float, maxOrbits: int) -> float:
-        i_dist = self.index_dist(a.orbitIndex, b.orbitIndex, maxOrbits)
-        angle = 360 * (i_dist / maxOrbits)
-        # print(f'Angle between nodes {a.name} and {b.name} is {angle} degrees')
-        arc_len = math.radians(angle) * r
-        # print(f'Orbit radius between nodes {a.name} and {b.name} is {r}')
-        return arc_len
+    # def calc_arc_len(self, a: Node, b: Node, r: float, maxOrbits: int) -> float:
+    #     i_dist = self.index_dist(a.orbitIndex, b.orbitIndex, maxOrbits)
+    #     angle = 360 * (i_dist / maxOrbits)
+    #     # print(f'Angle between nodes {a.name} and {b.name} is {angle} degrees')
+    #     arc_len = math.radians(angle) * r
+    #     # print(f'Orbit radius between nodes {a.name} and {b.name} is {r}')
+    #     return arc_len
 
     def calc_angle(self, a: Node, b: Node, r: float, maxOrbits: int) -> float:
         i_dist = self.index_dist(a.orbitIndex, b.orbitIndex, maxOrbits)
@@ -262,45 +266,16 @@ class JewelDrawing():
         )
 
     def make_straight_edge(self, start_node: Node, end_node: Node) -> StraightEdge:
-        """
-        Spec for an edge:
-            {
-                ?ends: [
-                    {
-                        'absX': 12345,
-                        'absY': 12345,
-                        'relX': 12345,
-                        'relY': 12345
-                    },
-                    {
-                        'absX': 23456,
-                        'absY': 23456,
-                        'relX': 12345,
-                        'relY': 12345
-                    }
-                ]
-                ?orbitCenter: {
-                    'absX': 12345,
-                    'absY': 12345,
-                    'relX': 12345,
-                    'relY': 12345
-                },
-                ?orbitRadius: 12345
-            }
-        """
         edge = StraightEdge(
-            start=start_node.node_id,
-            end=end_node.node_id,
             allocated=start_node.allocated and end_node.allocated,
-            edge_type='StraightEdge',
             ends=[
                 {
-                    'absolute': self.truncate_vert(start_node.absolute_coords, 2),
-                    'relative': self.truncate_vert(start_node.relative_coords, 2),
+                    'node_id': start_node.node_id,
+                    'relative': start_node.relative_coords,
                 },
                 {
-                    'absolute': self.truncate_vert(end_node.absolute_coords, 2),
-                    'relative': self.truncate_vert(end_node.relative_coords, 2)
+                    'node_id': end_node.node_id,
+                    'relative': end_node.relative_coords,
                 }
             ]
         )
@@ -308,18 +283,13 @@ class JewelDrawing():
 
     def make_curved_edge(self, start_node: Node, end_node: Node, max_orbits: int):
         edge = CurvedEdge(
-            start=start_node.node_id,
-            end=end_node.node_id,
             allocated=start_node.allocated and end_node.allocated,
-            edge_type='CurvedEdge',
-            absolute_center=self.truncate_vert(start_node.group_absolute_coords, 2),
-            relative_center=self.truncate_vert(start_node.group_relative_coords, 2),
-            rotation=self.truncate_float((self.calc_arc_rotation(start_node.orbitIndex,
-                                                                 end_node.orbitIndex,
-                                                                 max_orbits, True)), 2),
-            arc_len=self.truncate_float(self.calc_arc_len(start_node, end_node, start_node.orbitRadius, max_orbits), 2),
-            radius=self.truncate_float(start_node.orbitRadius, 2),
-            angle=self.truncate_float(self.calc_angle(start_node, end_node, start_node.orbitRadius, max_orbits), 2)
+            relative_center=start_node.group_relative_coords,
+            rotation=self.calc_arc_rotation(start_node.orbitIndex,
+                                            end_node.orbitIndex,
+                                            max_orbits, True),
+            radius=start_node.orbitRadius,
+            angle=self.calc_angle(start_node, end_node, start_node.orbitRadius, max_orbits),
         )
         return edge
 
@@ -337,8 +307,8 @@ class JewelDrawing():
             node.allocated = node.node_id in allocated_hashes
 
         # identify all edges we need to make
-        output_obj.edges = []
-        edge_objects = []
+        output_obj.curved_edges = []
+        output_obj.straight_edges = []
         traversed_edges = set()
         traversed_nodes = set()
 
@@ -378,8 +348,8 @@ class JewelDrawing():
                     end_allocated = node_json['skill'] in allocated_hashes
 
                     end_node = self.make_node(node_json, group, end_allocated)
-                    end_node.relative_coords = self.truncate_vert(Vertex(nCoords.x - jX, nCoords.y - jY), 2)
-                    end_node.group_relative_coords = self.truncate_vert(Vertex(group['x'] - jX, group['y'] - jY), 2)
+                    end_node.relative_coords = Vertex(nCoords.x - jX, nCoords.y - jY)
+                    end_node.group_relative_coords = Vertex(group['x'] - jX, group['y'] - jY)
 
                 start_node = output_obj.nodes[node_idx]
 
@@ -388,10 +358,11 @@ class JewelDrawing():
                     edge = self.make_curved_edge(start_node,
                                                  end_node,
                                                  self.tree_data['constants']['skillsPerOrbit'][start_node.orbit])
+                    output_obj.curved_edges.append(edge)
                 else:
                     edge = self.make_straight_edge(start_node, end_node)
+                    output_obj.straight_edges.append(edge)
 
-                edge_objects.append(edge)
                 traversed_edges.add((node_idx, connected_node))
                 if output_obj.nodes.get(connected_node) is not None:
                     traverse(connected_node)
@@ -404,10 +375,9 @@ class JewelDrawing():
         for node_idx in remaining_nodes:
             traverse(node_idx)
 
-        jewel_obj.edges = edge_objects
+        jewel_obj.curved_edges = output_obj.curved_edges
+        jewel_obj.straight_edges = output_obj.straight_edges
 
-        # finally filter out all nodes that aren't allocated
-        # jewel_obj.nodes = {k: v for k, v in jewel_obj.nodes.items() if v.node_id in allocated_hashes}
         return jewel_obj
 
     def make_tooltip(self, node: Node, change_data: dict, replaced: bool) -> NodeTooltip:
@@ -624,6 +594,192 @@ class JewelDrawing():
                 output.append(v['template'].format(val=v['val']))
         
         return output
+    
+    def coalesce_curved_edges(self, drawing: DrawingRoot) -> List[CurvedEdge]:
+        """ Adjacent edges can situationally be merged into one.
+            
+            Curved edges with the same center, allocated val and 1 common endpoint can be merged.
+        """
+
+        def key(edge: CurvedEdge) -> Tuple[bool, Vertex]:
+            return (edge.allocated, edge.relative_center)
+
+        # Group by (allocated, relative_center)
+        groups = defaultdict(list)
+        for edge in drawing.curved_edges:
+            groups[key(edge)].append(edge)
+
+        merged_curved_edges = []
+
+        for group_key, group_edges in groups.items():
+            # Sort by rotation
+            group_edges.sort(key=lambda e: e.rotation)
+
+            i = 0
+            while i < len(group_edges):
+                current = group_edges[i]
+                start_rotation = current.rotation
+                total_angle = current.angle
+                radius = current.radius
+
+                j = i + 1
+                while j < len(group_edges):
+                    next_edge = group_edges[j]
+                    end_rotation = start_rotation + total_angle
+
+                    if isclose(end_rotation, next_edge.rotation) and isclose(radius, next_edge.radius):
+                        # Extend the arc
+                        total_angle += next_edge.angle
+                        j += 1
+                    else:
+                        break
+
+                # Add the merged edge
+                merged_curved_edges.append(CurvedEdge(
+                    allocated=current.allocated,
+                    relative_center=current.relative_center,
+                    rotation=start_rotation,
+                    radius=radius,
+                    angle=total_angle
+                ))
+
+                i = j
+
+        return merged_curved_edges
+
+    def coalesce_straight_edges(self, drawing: DrawingRoot) -> List[StraightEdge]:
+        """ Adjacent edges can situationally be merged into one.
+
+            Straight edges with at least 1 common endpoint and same slope can be merged.
+        """
+
+        def slope(edge: StraightEdge):
+            # measure 'starting from bottom left'
+            y1 = edge.ends[0]['relative'].y
+            y2 = edge.ends[1]['relative'].y
+            deltaY = max(y1, y2) - min(y1, y2)
+
+            x1 = edge.ends[0]['relative'].x
+            x2 = edge.ends[1]['relative'].x
+            deltaX = max(x1, x2) - min(x1, x2)
+
+            if isclose(deltaX, 0):
+                return inf
+
+            return self.truncate_float(deltaY / deltaX, 1)
+        
+        # group edges by slope
+        edge_groups = defaultdict(list)
+        for edge in drawing.straight_edges:
+            edge_slope = slope(edge)
+            edge_groups[edge_slope].append(edge)
+        
+        def merge_straight_edges(slope: float, edges: List[StraightEdge]) -> List[StraightEdge]:
+            result = []
+
+            # Group edges by allocated value
+            groups = defaultdict(list)
+            for edge in edges:
+                groups[edge.allocated].append(edge)
+
+            for allocated_value, group in groups.items():
+                # Build adjacency list and node_id → end_dict mapping
+                graph = defaultdict(set)
+                node_id_to_end = {}
+
+                for edge in group:
+                    id1 = edge.ends[0]['node_id']
+                    id2 = edge.ends[1]['node_id']
+                    graph[id1].add(id2)
+                    graph[id2].add(id1)
+                    node_id_to_end[id1] = edge.ends[0]
+                    node_id_to_end[id2] = edge.ends[1]
+
+                visited = set()
+
+                def bfs(start):
+                    component = set()
+                    queue = deque([start])
+                    while queue:
+                        node = queue.popleft()
+                        if node not in visited:
+                            visited.add(node)
+                            component.add(node)
+                            queue.extend(graph[node] - visited)
+                    return component
+
+                all_node_ids = set(graph.keys())
+                for node_id in all_node_ids:
+                    if node_id not in visited:
+                        component = bfs(node_id)
+                        if len(component) == 1:
+                            # Isolated node, find the full original edge
+                            for edge in group:
+                                ids = {edge.ends[0]['node_id'], edge.ends[1]['node_id']}
+                                if ids == component:
+                                    result.append(edge)
+                                    break
+                        else:
+                            # find the extrema
+                            if abs(slope) >= 1:
+                                dim = 'y'
+                            else:
+                                dim = 'x'
+
+                            # look for extrema
+                            # end1 is max in this dim, end2 is min
+                            end1 = None
+                            end2 = None
+                            for node_id in component:
+                                end = node_id_to_end[node_id]
+                                if not end1 and not end2:
+                                    end1 = end
+                                    end2 = end
+                                else:
+                                    if getattr(end['relative'], dim) > getattr(end1['relative'], dim):
+                                        end1 = end
+                                    elif getattr(end['relative'], dim) < getattr(end2['relative'], dim):
+                                        end2 = end
+
+                            result.append(StraightEdge(
+                                allocated=allocated_value,
+                                ends=[end1, end2]
+                            ))
+
+            return result
+        
+        merged_straight_edges = []
+        for s, group in edge_groups.items():
+            merged_straight_edges += merge_straight_edges(s, group)
+        
+        return merged_straight_edges
+
+    def truncate_values(self, drawing: DrawingRoot) -> DrawingRoot:
+
+        for node in drawing.nodes.values():
+            node.absolute_coords = self.truncate_vert(node.absolute_coords, 2)
+            node.relative_coords = self.truncate_vert(node.relative_coords, 2)
+            node.group_absolute_coords = self.truncate_vert(node.group_absolute_coords, 2)
+        
+        for edge in drawing.straight_edges:
+            for end in edge.ends:
+                end['relative'] = self.truncate_vert(end['relative'], 2)
+        
+        for edge in drawing.curved_edges:
+            edge.relative_center = self.truncate_vert(edge.relative_center, 2)
+            edge.rotation = self.truncate_float(edge.rotation, 2)
+            edge.radius = self.truncate_float(edge.radius, 2)
+            edge.angle = self.truncate_float(edge.angle, 2)
+
+        return drawing
+
+    def minimize_field_names(self, drawing: DrawingRoot) -> DrawingRoot:
+        """ We've truncated all the values, we've merged all the objects we can,
+            the last thing we can do to make the drawing smaller is by reducing the field
+            names down to a single character.
+        """
+        # reminder to delete node_id from straight edge ends
+        return drawing
 
     def make_drawing(self, api_response: dict, jewel: ParsedJewel) -> DrawingRoot:
         """ We need the api response for the list of allocated nodes and the jewel api id
@@ -632,20 +788,16 @@ class JewelDrawing():
             Returns the full json that the frontend will need to draw a cutout of the passive tree.
         """
         logger.debug(f'Begin drawing for jewel: {jewel.jewel_type} {jewel.seed} {jewel.general}')
-        # api_jewel_id = None
-        # for k, v in api_response['jewel_data'].items():
-        #     if v['type'] == 'JewelTimeless':
-        #         api_jewel_id = int(k)
-        #         break
         
         allocated_hashes = api_response['hashes']
 
         drawing = self.make_pre_transform_drawing(int(jewel.socket_id), allocated_hashes)
-        logger.debug('Drawing base done.')
         drawing, jewel_stats = self.apply_jewel_changes(drawing, jewel)
-        logger.debug('Jewel changes applied.')
+        drawing.curved_edges = self.coalesce_curved_edges(drawing)
+        drawing.straight_edges = self.coalesce_straight_edges(drawing)
         jewel_stat_list = self.jewel_stats_dict_to_list(jewel_stats)
         drawing.jewel_stats = jewel_stat_list
         drawing.jewel_type = jewel.jewel_type
-        logger.debug('Stat totals applied.')
+        drawing = self.truncate_values(drawing)
+        drawing = self.minimize_field_names(drawing)
         return drawing

@@ -67,6 +67,17 @@ def delete_divayth_fyr(db_engine):
 
 
 @pytest.fixture()
+def delete_steve(db_engine):
+    with db_engine.connect() as conn:
+        # get his character id
+        q = select(c_.c.character_id).where(c_.c.character_name == 'NeedForSteveUnderground')
+        c_id = conn.execute(q).scalar()
+        conn.execute(delete(j_).where(j_.c.character_id == c_id))
+        conn.execute(delete(c_).where(c_.c.character_id == c_id))
+        conn.commit()
+
+
+@pytest.fixture()
 def test_app(test_config):
     app = setup_app(test_config)
     yield app.test_client()

@@ -89,9 +89,9 @@ def add_league(league: League) -> int:
             constraint='uk_league_name', set_={'league_end': league.league_end}
         )
         print(upsert)
-        result = conn.execute(upsert).first()
+        result = conn.execute(upsert).scalar()
         conn.commit()
-        return result['league_id']
+        return result
 
 
 @dataclass
@@ -277,16 +277,16 @@ def process_single_ladder_entry(ladder_entry: dict, league_id: int):
     # trim down jewel data
     #  - this is a pretty damn stupid step but I want to see how much I can shrink the response size
 
-    def cull_edges(drawing):
-        for edge in drawing['edges']:
-            if edge['edge_type'] == 'CurvedEdge':
-                edge.pop('absolute_center')
-                edge.pop('arc_len')
-            else:
-                edge['ends'][0].pop('absolute')
-                edge['ends'][1].pop('absolute')
+    # def cull_edges(drawing):
+    #     for edge in drawing['edges']:
+    #         if edge['edge_type'] == 'CurvedEdge':
+    #             edge.pop('absolute_center')
+    #             edge.pop('arc_len')
+    #         else:
+    #             edge['ends'][0].pop('absolute')
+    #             edge['ends'][1].pop('absolute')
         
-        return drawing
+    #     return drawing
 
     def cull_nodes(drawing):
         for node in drawing['nodes'].values():
@@ -304,7 +304,7 @@ def process_single_ladder_entry(ladder_entry: dict, league_id: int):
         
         return drawing
     
-    parsed_jewel.drawing = cull_edges(parsed_jewel.drawing)
+    # parsed_jewel.drawing = cull_edges(parsed_jewel.drawing)
     parsed_jewel.drawing = cull_nodes(parsed_jewel.drawing)
 
     character = Character(league_id,
