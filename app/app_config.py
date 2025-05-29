@@ -13,6 +13,7 @@ class AppConfig:
     LOG_LEVEL: str
     LOG_FORMAT: str
     DATA_DIR: str
+    LEVEL_CUTOFF: int
     DATABASE_HOST: str
     DATABASE_PORT: str
     DATABASE_USER: str
@@ -58,6 +59,7 @@ def create_config(file_path: str = None) -> AppConfig:
             parser.get('APP', 'LOG_LEVEL'),
             parser.get('APP', 'LOG_FORMAT'),
             parser.get('APP', 'DATA_DIR'),
+            parser.getint('APP', 'LEVEL_CUTOFF'),
             parser.get('DB', 'DATABASE_HOST'),
             parser.get('DB', 'DATABASE_PORT'),
             parser.get('DB', 'DATABASE_USER'),

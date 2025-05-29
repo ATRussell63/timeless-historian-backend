@@ -390,7 +390,9 @@ def poll_ladder():
 
         for entry in ladder_entries:
             try:
-                if entry.get('public') is True:
+                if entry.get('public') is True \
+                   and entry.get('character', {}).get('class', '') in LD_CACHE.class_ids \
+                   and entry.get('character', {}).get('level', 0) >= get_config().LEVEL_CUTOFF:
                     process_single_ladder_entry(entry, league_id)
             except Exception as e:
                 logger.error(f'Failed process_single_ladder_entry: {e}')
