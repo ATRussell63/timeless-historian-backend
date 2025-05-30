@@ -106,7 +106,6 @@ create table character(
     last_scan timestamp with time zone
 );
 
--- think i'm gonna declare that there can only be ONE character of each class with the same name
 
 create table jewel(
     jewel_id bigserial primary key,
@@ -120,6 +119,8 @@ create table jewel(
     initial_scan_date timestamp with time zone,
     scan_date timestamp with time zone
 );
+
+create index i_jewel_type_seed on jewel (jewel_type_id, seed);
 
 create table socket_lut(
     socket_id integer primary key,
@@ -290,57 +291,3 @@ BEGIN
     RETURN FALSE;
 END;
 $$;
-
-
-
-
-
-
-
--- league
---     - lists each league along with its start and end
-
--- character
---     - represents a character in a league
---     - lists things like last time scanned, ladder rank etc
-
--- jewel
---     - base, seed, general
---     - MF mods will be joined with a separate table
---     - socket that it was equipped in
---     - timestamp equipped
-    
--- jewel_mf_mods
---     - jewel_id, mf_mod
---     - every militant faith jewel will have exactly 2 entries in this table
-
--- mf_mod_lut
---     - just lists the militant faith mods
-
-
--- query practice
-
--- here's my jewel, give me a list of all jewels of the same seed that were equipped, and their characters
-
--- ** huge disclaimer on the MF example, this generates 2 rows for each jewel so you need to 'transpose' the mf mods (or something)
-
--- select j.base, j.seed, j.general, mml.mod from jewel j
--- join character c on c.character_id = j.character_id
--- left join jewel_mf_mods on jmm.jewel_id = j.jewel_id
--- join mf_mod_lut mml on jmm.mf_mod_id on mml.mf_mod_id
--- where j.base = 'Militant Faith'
--- and j.seed = '12345'
-
-
--- ok scratch all that, we are just gonna use a bit string????
-
--- doesn't exactly fix all our problems, but here's a couple scenarios:
-
--- exact match on the mods is the same as the bit strings match
--- using & will yield some results:
---     & result is 0 -> 0 matches
---     & result > 0 -> 1 match
-
-
--- there are currently 15 mf mods, so this can easily be represented by integer type
--- we can build the query with the 'bits' in mind, so it's no problem to split it into 2 separate joins against mf_mod_lut

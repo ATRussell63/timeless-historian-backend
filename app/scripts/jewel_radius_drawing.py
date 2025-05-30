@@ -43,21 +43,21 @@ class JewelDrawing():
             return 'cluster_passive'
         elif 'classStartIndex' in node_obj.keys():
             return 'class_start'
+        elif node_obj.get('ascendancyName') is not None:
+            return 'ascendancy'
+        # root node
+        elif node_obj['group'] == 0:
+            return 'root'
+        elif node_obj.get('isBlighted'):
+            return 'blight'
+        elif node_obj.get('isMastery'):
+            return 'mastery'
         elif node_obj.get('isKeystone'):
             return 'keystone'
         elif node_obj.get('isNotable'):
             return 'notable'
         elif node_obj.get('isJewelSocket'):
             return 'jewel_socket'
-        elif node_obj.get('isMastery'):
-            return 'mastery'
-        elif node_obj.get('ascendancyName') is not None:
-            return 'ascendancy'
-        elif node_obj.get('isBlighted'):
-            return 'blight'
-        # root node
-        elif node_obj['group'] == 0:
-            return 'root'
         else:
             return 'small_passive'
 
@@ -526,7 +526,7 @@ class JewelDrawing():
         keystone = converter.lookup_jewel_keystone(timeless_jewel.general)
 
         for k, node in jewel_drawing.nodes.items():
-            logger.debug(f'Processing {node.name}, {node.node_id}')
+            # logger.debug(f'Processing {node.name}, {node.node_id}')
             if node.node_type == 'jewel_socket':
                 if node.node_id == jewel_drawing.jewel_id:
                     # timeless jewel socket
