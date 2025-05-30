@@ -504,7 +504,7 @@ class JewelDrawing():
             # these stats really are hard breakpoints at every 10 devotion
             # so we truncate the result
             coeff = math.floor(devotion / 10)
-            val = per_ten_numeric * coeff
+            val = round(per_ten_numeric * coeff, 1)
 
             template = re.sub(str(per_ten_devotion), '{val}', mod, count=1)
             # get rid of the per 10 Devotion suffix, it's misleading
