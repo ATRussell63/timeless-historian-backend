@@ -1,8 +1,9 @@
 import configparser
 import os
 import logging
+import re
 from dataclasses import dataclass
-from typing import Optional
+from typing import Optional, List
 
 logger = logging.getLogger('main')
 
@@ -14,6 +15,8 @@ class AppConfig:
     LOG_FORMAT: str
     DATA_DIR: str
     LEVEL_CUTOFF: int
+    MAX_PROCESSED_CHARACTERS: int
+    LIVE_LEAGUES: List[str]
     DATABASE_HOST: str
     DATABASE_PORT: str
     DATABASE_USER: str
@@ -60,6 +63,8 @@ def create_config(file_path: str = None) -> AppConfig:
             parser.get('APP', 'LOG_FORMAT'),
             parser.get('APP', 'DATA_DIR'),
             parser.getint('APP', 'LEVEL_CUTOFF'),
+            parser.getint('APP', 'MAX_PROCESSED_CHARACTERS'),
+            [re.sub('_', ' ', league) for league in parser.get('APP', 'LIVE_LEAGUES').split(',')],
             parser.get('DB', 'DATABASE_HOST'),
             parser.get('DB', 'DATABASE_PORT'),
             parser.get('DB', 'DATABASE_USER'),
@@ -69,7 +74,7 @@ def create_config(file_path: str = None) -> AppConfig:
             parser.get('GGG', 'LIVE_PATCH'),
             parser.get('GGG', 'API_BASE_URL'),
             parser.get('GGG', 'SITE_BASE_URL'),
-            parser.getint('GGG', 'LADDER_MAX')
+            parser.getint('GGG', 'LADDER_MAX'),
         )
 
         init_logger(APP_CONFIG.LOG_LEVEL, APP_CONFIG.LOG_FORMAT)

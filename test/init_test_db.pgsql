@@ -92,6 +92,9 @@ create table league(
     league_end timestamp with time zone
 );
 
+insert into league (league_name, hardcore, league_start, league_end) values
+('Hardcore Settlers', TRUE, '2024-07-26 18:00:00+00:00', '2025-06-09 18:00:00+00:00'),
+('Settlers', TRUE, '2024-07-26 18:00:00+00:00', '2025-06-09 18:00:00+00:00');
 
 create table character(
     character_id bigserial primary key,
@@ -103,6 +106,8 @@ create table character(
     account_name text not null,
     ladder_rank integer not null,
     delve_depth integer,
+    timeout_counter integer default 0,
+    next_timeout_max integer default 1,
     last_scan timestamp with time zone
 );
 
@@ -130,7 +135,7 @@ create table socket_lut(
 );
 
 insert into socket_lut (socket_id, node_id, pob_name, description) values
-(0, 26725, 'Marauder', '')
+(0, 26725, 'Marauder', ''),
 (1, 36634, 'Mind Over Matter', 'Templar/Witch Mid-tree'),
 (2, 33989, 'Supreme Ego', 'Shadow/Ranger Mid-tree'),
 (3, 41263, 'Pain Attunement', 'Witch/Shadow Mid-tree'),

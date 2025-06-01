@@ -1,7 +1,7 @@
 import pytest
 from sqlalchemy.sql import select
 
-from app.models import c_, j_
+from app.models import c_, j_, l_
 from app.scripts import poll_character as pc
 from app.scripts.poll_character import League
 
@@ -79,25 +79,21 @@ STEVE = {
 }
 
 
-@pytest.fixture()
-def add_settlers_league():
-    settlers = League(name='Settlers',
-                      hardcore=False,
-                      league_start='2024-07-26 18:00:00+00:00',
-                      league_end=None)
-    yield pc.add_league(settlers)
+# @pytest.fixture()
+# def add_settlers_league():
+#     settlers = League(name='Settlers',
+#                       hardcore=False,
+#                       league_start='2024-07-26 18:00:00+00:00',
+#                       league_end=None)
+#     yield pc.add_league(settlers)
 
 
-# def test_get_leagues():
-#     leagues = pc.get_leagues()
-
-#     def is_settlers_xd(league: League):
-#         if league.name == 'Settlers' or league.name == 'Phrecia':
-#             return True
-#         else:
-#             return False
-
-#     assert len(list(filter(leagues, is_settlers_xd))) > 0
+@pytest.fixture
+def get_settlers_id(test_config, db_engine):
+    with db_engine.connect() as conn:
+        q = select(l_.c.league_id).select_from(l_).where(l_.c.league_name == 'Settlers')
+        league_id = conn.execute(q).scalar()
+        yield league_id
 
 
 def test_get_league_ladder(test_config):
@@ -108,9 +104,10 @@ def test_get_league_ladder(test_config):
     assert ladder_entries[0] == SETTLERS_RANK_ONE
 
 
-def test_process_single_ladder_entry(test_config, db_engine, clean_tables, add_settlers_league):
-    settlers_id = add_settlers_league
-    pc.process_single_ladder_entry(DIVAYTH_FYR, settlers_id)
+def test_process_single_ladder_entry(test_config, db_engine, clean_tables, get_settlers_id):
+    settlers_id = get_settlers_id
+    DIVAYTH_FYR['league_id'] = settlers_id
+    pc.process_single_ladder_entry(DIVAYTH_FYR)
 
     with db_engine.connect() as conn:
         characters = conn.execute(select(c_)).fetchall()
@@ -137,24 +134,71 @@ def test_process_single_ladder_entry(test_config, db_engine, clean_tables, add_s
         assert j.socket_id == 6
 
 
-def test_process_divayth_isolated(test_config, db_engine, delete_divayth_fyr):
-    settlers_id = 16
+def test_process_divayth_isolated(test_config, db_engine, delete_divayth_fyr, get_settlers_id):
+    settlers_id = get_settlers_id
+    DIVAYTH_FYR['league_id'] = settlers_id
     pc.process_single_ladder_entry(DIVAYTH_FYR, settlers_id)
 
 
-def test_process_steve_isolated(test_config, db_engine, delete_steve):
-    settlers_id = 16
-    pc.process_single_ladder_entry(STEVE, settlers_id)
+# def test_process_steve_isolated(test_config, db_engine, delete_steve):
+#     settlers_id = 19
+#     pc.process_single_ladder_entry(STEVE, settlers_id)
+#     This test is enshrined in memory of NeedForSteveUnderground
+#     Who valiantly fell in battle against the forces of darkness in a voided Valdo map
 
 
-def test_process_ten_ladder_entries(test_config, db_engine, clean_tables, add_settlers_league):
+def test_process_mutiple_ladder_entries(test_config, db_engine, clean_tables):
+    pc.poll_ladder()
+
+    with db_engine.connect() as conn:
+        characters = conn.execute(select(c_)).fetchall()
+        assert len(characters) == test_config.MAX_PROCESSED_CHARACTERS
+
+
+def test_poll_ladder_persistent(test_config, db_engine):
     pc.poll_ladder()
 
 
-def test_poll_padder(test_config, db_engine):
-    pc.poll_ladder()
+def test_poll_character_times_out_character_on_subsequent_runs(test_config, db_engine, clean_tables, get_settlers_id):
+    settlers_id = get_settlers_id
+    DIVAYTH_FYR['league_id'] = settlers_id
+    pc.process_single_ladder_entry(DIVAYTH_FYR)
+    pc.process_single_ladder_entry(DIVAYTH_FYR)
+
+    with db_engine.connect() as conn:
+        characters = conn.execute(select(c_)).fetchall()
+        c = characters[0]
+
+        assert c.timeout_counter == 1
+        assert c.next_timeout_max == 2
 
 
-def test_db_jewel_matches_actually_works(test_config, db_engine, add_settlers_league):
-    settlers_id = add_settlers_league
-    pc.process_single_ladder_entry(STEVE, settlers_id)
+def test_poll_character_decrements_timeout(test_config, db_engine, clean_tables, get_settlers_id):
+    settlers_id = get_settlers_id
+    DIVAYTH_FYR['league_id'] = settlers_id
+    pc.process_single_ladder_entry(DIVAYTH_FYR)
+    pc.process_single_ladder_entry(DIVAYTH_FYR)
+    pc.process_single_ladder_entry(DIVAYTH_FYR)
+
+    with db_engine.connect() as conn:
+        characters = conn.execute(select(c_)).fetchall()
+        c = characters[0]
+
+        assert c.timeout_counter == 0
+        assert c.next_timeout_max == 2
+
+
+def test_poll_character_doubles_timeout_on_repeat_offense(test_config, db_engine, clean_tables, get_settlers_id):
+    settlers_id = get_settlers_id
+    DIVAYTH_FYR['league_id'] = settlers_id
+    pc.process_single_ladder_entry(DIVAYTH_FYR)
+    pc.process_single_ladder_entry(DIVAYTH_FYR)
+    pc.process_single_ladder_entry(DIVAYTH_FYR)
+    pc.process_single_ladder_entry(DIVAYTH_FYR)
+
+    with db_engine.connect() as conn:
+        characters = conn.execute(select(c_)).fetchall()
+        c = characters[0]
+
+        assert c.timeout_counter == 2
+        assert c.next_timeout_max == 4

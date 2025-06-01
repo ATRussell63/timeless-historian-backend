@@ -38,7 +38,7 @@ def clean_tables(db_engine):
     with db_engine.connect() as conn:
         dj = delete_jewels()
         dc = delete_characters()
-        dl = delete_leagues()
+        # dl = delete_leagues()
 
         logger.debug('Deleting jewel table...')
         dj_result = conn.execute(dj)
@@ -48,9 +48,9 @@ def clean_tables(db_engine):
         dc_result = conn.execute(dc)
         logger.debug(f'Deleted {dc_result.rowcount} entries from `character`')
 
-        logger.debug('Deleting league table...')
-        dl_result = conn.execute(dl)
-        logger.debug(f'Deleted {dl_result.rowcount} entries from `league`')
+        # logger.debug('Deleting league table...')
+        # dl_result = conn.execute(dl)
+        # logger.debug(f'Deleted {dl_result.rowcount} entries from `league`')
 
         conn.commit()
 

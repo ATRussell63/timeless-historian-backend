@@ -15,6 +15,8 @@ c_ = character = Table(
     Column('account_name', Text),
     Column('ladder_rank', Integer),
     Column('delve_depth', Integer),
+    Column('timeout_counter', Integer),
+    Column('next_timeout_max', Integer),
     Column('last_scan', TIMESTAMP),
 )
 

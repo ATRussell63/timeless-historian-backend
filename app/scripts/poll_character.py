@@ -3,7 +3,8 @@ import logging
 from math import ceil
 from datetime import datetime
 from dataclasses import dataclass
-from typing import Optional, List, Dict
+from itertools import zip_longest
+from typing import Optional, List, Dict, Tuple
 from app.app_config import get_config
 from app.db import get_engine
 from app.models import c_, l_, j_, jtl_, gl_
@@ -30,7 +31,8 @@ def get_jewel_socket(passive_skills_response: dict):
 
 @dataclass
 class League:
-    name: str
+    league_id: int
+    league_name: str
     hardcore: bool
     league_start: str
     league_end: str
@@ -41,57 +43,32 @@ def get_leagues() -> List[League]:
     Get the current leagues we want to poll. For now this is Softcore and Hardcore trade leagues.
     """
 
-    # TODO fix the league endpoint stuff after we get real api access
-    poll_leagues = [League(name='Settlers',
-                           hardcore=False,
-                           league_start='2024-07-26 18:00:00+00:00',
-                           league_end=None),
-                    League(name='Hardcore Settlers',
-                           hardcore=True,
-                           league_start='2024-07-26 18:00:00+00:00',
-                           league_end=None)]
-
-    # api = GGG_Api()
-    # response = api.get_leagues()
-
-    # poll_leagues = []
-    # for league in response.json():
-    #     if league['category']['current'] is True and league['realm'] == 'pc':
-    #         ssf = False
-    #         hardcore = False
-    #         for league_rule in league['rules']:
-    #             if league_rule['id'] == 'NoParties':
-    #                 ssf = True
-    #             if league_rule['id'] == 'Hardcore':
-    #                 hardcore = True
-
-    #         if ssf:
-    #             continue
-
-    #         poll_leagues.append(League(name=league['id'],
-    #                                    hardcore=hardcore,
-    #                                    league_start=league['startAt'],
-    #                                    league_end=league['endAt']))
-
-    return poll_leagues
-
-
-def add_league(league: League) -> int:
-    """ Upsert the given league, only updating the end date if we have a new value. """
     with get_engine().connect() as conn:
-        upsert = insert(l_).returning(l_.c.league_id).values(
-            league_name=league.name,
-            hardcore=league.hardcore,
-            league_start=league.league_start,
-            league_end=league.league_end
-        )
-        upsert = upsert.on_conflict_do_update(
-            constraint='uk_league_name', set_={'league_end': league.league_end}
-        )
-        print(upsert)
-        result = conn.execute(upsert).scalar()
-        conn.commit()
-        return result
+        q = select(l_.c.league_id,
+                   l_.c.league_name,
+                   l_.c.hardcore,
+                   l_.c.league_start,
+                   l_.c.league_end).where(l_.c.league_name.in_(get_config().LIVE_LEAGUES))
+        leagues = conn.execute(q).fetchall()
+        return leagues
+
+
+# deprecated, will probably be manually inserting new leagues
+# def add_league(league: League) -> int:
+#     """ Upsert the given league, only updating the end date if we have a new value. """
+#     with get_engine().connect() as conn:
+#         upsert = insert(l_).returning(l_.c.league_id).values(
+#             league_name=league.name,
+#             hardcore=league.hardcore,
+#             league_start=league.league_start,
+#             league_end=league.league_end
+#         )
+#         upsert = upsert.on_conflict_do_update(
+#             constraint='uk_league_name', set_={'league_end': league.league_end}
+#         )
+#         result = conn.execute(upsert).scalar()
+#         conn.commit()
+#         return result
 
 
 @dataclass
@@ -106,10 +83,10 @@ class Character:
     delve_depth: int
 
 
-def add_character(character: Character) -> int:
+def add_character(character: Character) -> Tuple[int, bool]:
     """ Upsert the given character, returning the new or affected character_id. """
     with get_engine().connect() as conn:
-        upsert = insert(c_).returning(c_.c.character_id).values(
+        upsert = insert(c_).returning(c_.c.character_id, c_.c.timeout_counter).values(
             league_id=character.league_id,
             ggg_id=character.ggg_id,
             character_name=character.character_name,
@@ -126,9 +103,35 @@ def add_character(character: Character) -> int:
                                                     'character_level': character.character_level,
                                                     'delve_depth': character.delve_depth,
                                                     'last_scan': datetime.now().isoformat()})
-        character_id = conn.execute(upsert).scalar()
+        results = conn.execute(upsert).first()._asdict()
         conn.commit()
-        return character_id
+        return results['character_id'], results['timeout_counter']
+
+
+def decrement_character_timeout(character_id: str, timeout_counter: int):
+    with get_engine().connect() as conn:
+        up = update(c_).where(c_.c.character_id == character_id).values(timeout_counter=timeout_counter - 1)
+        conn.execute(up)
+        conn.commit()
+
+
+def send_character_to_timeout(character_id: str) -> int:
+    with get_engine().connect() as conn:
+        up = update(c_).returning(c_.c.next_timeout_max) \
+            .where(c_.c.character_id == character_id) \
+            .values(next_timeout_max=c_.c.next_timeout_max * 2,
+                    timeout_counter=c_.c.next_timeout_max)
+        results = conn.execute(up).scalar()
+        conn.commit()
+        return results
+
+
+def reset_timeout_max(character_id: str):
+    with get_engine().connect() as conn:
+        up = update(c_).where(c_.c.character_id == character_id) \
+            .values(next_timeout_max=1)
+        conn.execute(up)
+        conn.commit()
 
 
 LD_CACHE = LutData()
@@ -152,6 +155,7 @@ def get_character_jewel(character_id: int) -> Jewel:
         if results is None:
             return None
         else:
+            results = results._asdict()
             if results['mf_mods'] is not None:
                 mf_strings = mf_mod_int_to_strs(results['mf_mods'], LD_CACHE.mf_mod_map)
             else:
@@ -175,8 +179,8 @@ def db_jewel_matches_equipped(db_jewel: Jewel, equipped_jewel: ParsedJewel) -> b
             int(db_jewel.seed) == int(equipped_jewel.seed) and \
             db_jewel.general == equipped_jewel.general and \
             int(db_jewel.socket_id) == int(equipped_jewel.socket_id) and \
-            set(db_jewel.mf_mods) == set(equipped_jewel.mf_mods) and \
-            set(db_jewel.drawing['jewel_stats']) == set(dataclasses.asdict(equipped_jewel.drawing)['jewel_stats'])
+            set(db_jewel.mf_mods) == set(equipped_jewel.mf_mods)
+        # set(db_jewel.drawing['jewel_stats']) == set(dataclasses.asdict(equipped_jewel.drawing)['jewel_stats'])
         # jewel stats matching is a weak implication that the allocated passives didn't change
         # I can't compare the whole drawing because sub lists are unhashable to set
 
@@ -250,26 +254,47 @@ def get_league_ladder(league_name: str) -> List[dict]:
     return ladder_entries
 
 
-def process_single_ladder_entry(ladder_entry: dict, league_id: int):
-    api = GGG_Api()
+def process_single_ladder_entry(ladder_entry: dict):
     account_name = ladder_entry['account']['name']
     character_name = ladder_entry['character']['name']
+    ggg_id = ladder_entry['character']['id']
 
-    logger.debug(f'Processing entry for {character_name} - {account_name}...')
+    logger.debug(f'Processing entry for {character_name} - {account_name} - {ggg_id}...')
+
+    character = Character(ladder_entry['league_id'],
+                          ladder_entry['character']['id'],
+                          ladder_entry['character']['name'],
+                          LD_CACHE.class_ids[ladder_entry['character']['class']],
+                          ladder_entry['character']['level'],
+                          ladder_entry['account']['name'],
+                          ladder_entry['rank'],
+                          ladder_entry['character'].get('depth', {}).get('default', 0))
+
+    character_id, timeout_counter = add_character(character)
+
+    # if character is in timeout just decrement and bail
+    if timeout_counter > 0:
+        logger.debug(f"Character's timeout is {timeout_counter} . Decrementing and moving on...")
+        decrement_character_timeout(character_id, timeout_counter)
+        logger.debug(f'Finished processing {character_name} - {account_name} - {ggg_id}')
+        return
 
     try:
+        api = GGG_Api()
         response = api.get_passive_skills(account_name, character_name)
     except PrivateAccountException:
         logger.error(f'This account was identified as private. \
                        Account Name: {account_name} - Character: {character_name}')
-        # logger.error(f'Full error: {e}')
+        logger.debug(f'Finished processing {character_name} - {account_name} - {ggg_id}')
         return
 
     # is the character wearing a timeless jewel?
     parsed_jewel = get_equipped_timeless_jewel_obj(response.json())
 
     if parsed_jewel is None:
-        logger.debug(f'Character {character_name} was not wearing a timeless jewel.')
+        logger.debug(f'Character {character_name} was not wearing a timeless jewel, sending them to time out.')
+        send_character_to_timeout(character_id)
+        logger.debug(f'Finished processing {character_name} - {account_name} - {ggg_id}')
         return
 
     # convert jewel to dict
@@ -357,42 +382,64 @@ def process_single_ladder_entry(ladder_entry: dict, league_id: int):
     parsed_jewel.drawing['straight_edges'] = new_straight_edges
     parsed_jewel.drawing['curved_edges'] = new_curved_edges
 
-    character = Character(league_id,
-                          ladder_entry['character']['id'],
-                          ladder_entry['character']['name'],
-                          LD_CACHE.class_ids[ladder_entry['character']['class']],
-                          ladder_entry['character']['level'],
-                          ladder_entry['account']['name'],
-                          ladder_entry['rank'],
-                          ladder_entry['character'].get('depth', {}).get('default', 0))
-
-    # TODO - am i supposed to be doing this every time?
-    character_id = add_character(character)
-
     # is equipped jewel the same that's already in the db?
     db_jewel = get_character_jewel(character_id)
+
+    # if they are using the same ITEM (type, general, seed, mf_mods) and in the same slot
     if db_jewel_matches_equipped(db_jewel, parsed_jewel):
-        # just mark as scanned
+        # update the drawing but put them in timeout
+        logger.debug(f"Character {character_name}'s jewel is the same item as before, in the same socket.")
         update_jewel_scan_date_and_drawing(db_jewel.jewel_id, parsed_jewel.drawing)
+        timeout = send_character_to_timeout(character_id)
+        logger.debug(f'Sending them to time out for {timeout} runs.')
     else:
         # add new jewel
         add_jewel(parsed_jewel, character_id)
+        reset_timeout_max(character_id)
+        logger.debug(f'Finished processing {character_name} - {account_name} - {ggg_id}')
+
+
+def filter_ladder_entries(entries: List[Dict]) -> List[Dict]:
+    # ascended, leveled, public and alive
+    def filter_conditions(entry):
+        return entry.get('character', {}).get('class', '') in LD_CACHE.class_ids \
+            and entry.get('character', {}).get('level', 0) >= get_config().LEVEL_CUTOFF \
+            and entry.get('public', False) is True \
+            and entry.get('dead', False) is False
+
+    return list(filter(filter_conditions, entries))
+
+
+def interleave(*lists):
+    return [item for group in zip_longest(*lists) for item in group if item is not None]
+
+
+def apply_league_id_to_entries(entries: List[Dict], league_id: int) -> List[Dict]:
+    for entry in entries:
+        entry['league_id'] = league_id
+    return entries
 
 
 def poll_ladder():
 
     leagues = get_leagues()
-
+    league_ladders = []
     for league in leagues:
-        # insert league if not already in db
-        league_id = add_league(league)
-        ladder_entries = get_league_ladder(league.name)
+        ladder_entries = get_league_ladder(league.league_name)
+        ladder_entries = filter_ladder_entries(ladder_entries)
+        ladder_entries = apply_league_id_to_entries(ladder_entries, league.league_id)
+        league_ladders.append(ladder_entries)
+    
+    merged_ladder = interleave(*league_ladders)
 
-        for entry in ladder_entries:
-            try:
-                if entry.get('public') is True \
-                   and entry.get('character', {}).get('class', '') in LD_CACHE.class_ids \
-                   and entry.get('character', {}).get('level', 0) >= get_config().LEVEL_CUTOFF:
-                    process_single_ladder_entry(entry, league_id)
-            except Exception as e:
-                logger.error(f'Failed process_single_ladder_entry: {e}')
+    counter = 0
+    for entry in merged_ladder:
+        if counter >= get_config().MAX_PROCESSED_CHARACTERS:
+            logger.debug(f'Quota of {counter} characters has been processed, quitting...')
+            break
+
+        try:
+            process_single_ladder_entry(entry)
+            counter += 1
+        except Exception as e:
+            logger.error(f'Failed process_single_ladder_entry: {e}')
