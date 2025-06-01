@@ -9,3 +9,6 @@ __pycache__
 db_init_script.pgsql
 config
 .nginx
+.venv
+.vscode
+.pytest_cache
