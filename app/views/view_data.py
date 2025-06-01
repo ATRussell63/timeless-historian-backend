@@ -31,7 +31,7 @@ def view_data_summary():
 def view_data_sample():
     """ Returns an assortment of random jewels.
     """
-
+    logger.debug('/data/sample')
     response = {}
     try:
         limit = int(request.args.get('limit'))

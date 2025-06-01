@@ -1,3 +1,4 @@
+create user timeless_backend with password 'Dfr6ftaMT*3wm7';
 
 create table mf_mod_lut(
     mf_mod_lut_id smallserial primary key,
@@ -296,3 +297,9 @@ BEGIN
     RETURN FALSE;
 END;
 $$;
+
+GRANT USAGE ON SCHEMA public TO timeless_backend;
+GRANT SELECT, UPDATE, INSERT ON ALL TABLES IN SCHEMA public TO timeless_backend;
+GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO timeless_backend;
+grant execute on all functions in schema public
+to timeless_backend;

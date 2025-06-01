@@ -33,6 +33,8 @@ def view_search():
     }
 
     """
+    logger.debug(f'/search received: {request.json}')
+
     response_body = {}
     try:
         request_data = parse_jewel_search_request(request)

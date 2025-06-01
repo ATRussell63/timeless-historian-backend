@@ -3,6 +3,9 @@ node_link.json
 NOTES.txt
 # app/config.ini
 app/notes
-app/data
+data
 *.pyc
 __pycache__
+db_init_script.pgsql
+config
+.nginx
