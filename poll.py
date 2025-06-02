@@ -15,7 +15,7 @@ required_data_files = ['BrutalRestraint',
                        'data.json']
 
 if __name__ == '__main__':
-    config = create_config('./app/config.ini')
+    config = create_config('./config/config.ini')
     for data_file in required_data_files:
         full_path = get_data_path() + f'{data_file}'
         p = pathlib.Path(full_path)
