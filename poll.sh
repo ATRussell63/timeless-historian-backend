@@ -21,7 +21,7 @@ if ! [ -d "./data/" ]; then
 fi
 
 if ! [ -d "./data/$PATCH" ]; then
-    mkdir "./app/data/$PATCH"
+    mkdir "./data/$PATCH"
 fi
 
 # get the tree data from ggg if we don't have it already
