@@ -11,7 +11,6 @@ COPY convert.lua .
 COPY dkjson.lua .
 COPY poll.py .
 COPY poll.sh .
-COPY db_init_script.pgsql .
 COPY run.py .
 COPY config ./config
 
