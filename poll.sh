@@ -38,7 +38,7 @@ done
 
 # GV needs to be unzipped
 if ! [ -f "./data/$PATCH/GloriousVanity" ]; then
-    curl -L -o "./data/$PATCH/GloriousVanity.zip" "https://raw.githubusercontent.com/Regisle/TimelessJewelData/main/Data/GloriousVanity.zip" && pigz -z -d "./app/data/$PATCH/GloriousVanity.zip"
+    curl -L -o "./data/$PATCH/GloriousVanity.zip" "https://raw.githubusercontent.com/Regisle/TimelessJewelData/main/Data/GloriousVanity.zip" && pigz -z -d "./data/$PATCH/GloriousVanity.zip"
 fi
 
 # node_indices.csv
@@ -49,7 +49,7 @@ fi
 # files that we convert from lua
 if ! [ -f "./data/$PATCH/LegionPassives.json" ]; then
     # if not, get from the pob repo and then convert it from lua
-    curl -L -o "./data/$PATCH/LegionPassives.lua" "https://raw.githubusercontent.com/PathOfBuildingCommunity/PathOfBuilding/master/src/Data/TimelessJewelData/LegionPassives.lua" && lua5.3 convert.lua "./app/data/$PATCH/LegionPassives" && rm "./app/data/$PATCH/LegionPassives.lua"
+    curl -L -o "./data/$PATCH/LegionPassives.lua" "https://raw.githubusercontent.com/PathOfBuildingCommunity/PathOfBuilding/master/src/Data/TimelessJewelData/LegionPassives.lua" && lua5.3 convert.lua "./data/$PATCH/LegionPassives" && rm "./data/$PATCH/LegionPassives.lua"
 fi
 
 echo "Starting poll.py..."
