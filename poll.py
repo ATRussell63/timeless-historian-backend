@@ -17,7 +17,7 @@ required_data_files = ['BrutalRestraint',
                        'data.json']
 
 if __name__ == '__main__':
-    config = create_config('./config/test_config.ini')
+    config = create_config('./config/config.ini')
     logger = logging.getLogger('main')
 
     if pathlib.Path(config.LOCKFILE_NAME).exists():
