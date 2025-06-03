@@ -17,6 +17,7 @@ def view_data_summary():
     
     """
     response = {}
+    logger.debug('/data/summary')
 
     try:
         results = execute_query_data_summary()
