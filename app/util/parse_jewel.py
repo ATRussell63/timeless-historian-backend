@@ -71,7 +71,7 @@ def parse_militant_faith_mods(jewel_string: str) -> List[str]:
 def mf_mod_int_to_strs(mf_mods: int, mod_list: Dict[str, int]) -> List[str]:
     str_mods = []
     for x in range(0, len(mod_list)):
-        if (mf_mods & (2 ** x)) > 1:
+        if (mf_mods & (2 ** x)) >= 1:
             str_mods.append(list(mod_list.keys())[x])
 
     return str_mods

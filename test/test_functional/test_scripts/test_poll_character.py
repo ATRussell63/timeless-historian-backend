@@ -1,5 +1,5 @@
 import pytest
-from sqlalchemy.sql import select
+from sqlalchemy.sql import select, update
 
 from app.models import c_, j_, l_
 from app.scripts import poll_character as pc
@@ -78,6 +78,30 @@ STEVE = {
     }
 }
 
+BOTYARA = {
+    "rank": 55,
+    "dead": False,
+    "public": True,
+    "character": {
+        "id": "430ae1270555b54014dc3f6214a3ae6b539ec7de0cc0c9ec4584828b9bab52cf",
+        "name": "DishwashingMachine",
+        "level": 100,
+        "class": "Occultist",
+        "experience": 4250334444
+    },
+    "account": {
+        "name": "Botyara2#6364",
+        "challenges": {
+            "set": "Village",
+            "completed": 8,
+            "max": 40
+        },
+        "twitch": {
+            "name": "botyara2"
+        }
+    }
+}
+
 
 # @pytest.fixture()
 # def add_settlers_league():
@@ -92,6 +116,14 @@ STEVE = {
 def get_settlers_id(test_config, db_engine):
     with db_engine.connect() as conn:
         q = select(l_.c.league_id).select_from(l_).where(l_.c.league_name == 'Settlers')
+        league_id = conn.execute(q).scalar()
+        yield league_id
+
+
+@pytest.fixture
+def get_hardcore_settlers_id(test_config, db_engine):
+    with db_engine.connect() as conn:
+        q = select(l_.c.league_id).select_from(l_).where(l_.c.league_name == 'Hardcore Settlers')
         league_id = conn.execute(q).scalar()
         yield league_id
 
@@ -139,6 +171,20 @@ def test_process_divayth_isolated(test_config, db_engine, delete_divayth_fyr, ge
     DIVAYTH_FYR['league_id'] = settlers_id
     pc.process_single_ladder_entry(DIVAYTH_FYR, settlers_id)
 
+
+def test_process_repeat_scans_do_not_generate_multiple_jewel_rows(test_config, db_engine, clean_tables, get_hardcore_settlers_id):
+    BOTYARA['league_id'] = get_hardcore_settlers_id
+    pc.process_single_ladder_entry(BOTYARA)
+
+    with db_engine.connect() as conn:
+        conn.execute(update(c_).where(c_.c.character_name == 'DishwashingMachine').values(timeout_counter=0, next_timeout_max=1))
+        conn.commit()
+    
+    pc.process_single_ladder_entry(BOTYARA)
+
+    with db_engine.connect() as conn:
+        results = conn.execute(select(j_.c.jewel_id).select_from(j_).join(c_, c_.c.character_id == j_.c.character_id).where(c_.c.character_name == 'DishwashingMachine')).fetchall()
+        assert len(results) == 1
 
 # def test_process_steve_isolated(test_config, db_engine, delete_steve):
 #     settlers_id = 19

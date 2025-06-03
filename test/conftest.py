@@ -12,7 +12,7 @@ logger = logging.getLogger('main')
 @pytest.fixture(autouse=True)
 def test_config():
     from app.app_config import create_config
-    config = create_config('test/test_config.ini')
+    config = create_config('config/test_config.ini')
     yield config
 
 
