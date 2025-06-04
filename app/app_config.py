@@ -17,6 +17,7 @@ class AppConfig:
     LEVEL_CUTOFF: int
     MAX_PROCESSED_CHARACTERS: int
     LIVE_LEAGUES: List[str]
+    MAX_CHARACTER_TIMEOUT: int
     LOCKFILE_NAME: str
     DATABASE_HOST: str
     DATABASE_PORT: str
@@ -66,6 +67,7 @@ def create_config(file_path: str = None) -> AppConfig:
             parser.getint('APP', 'LEVEL_CUTOFF'),
             parser.getint('APP', 'MAX_PROCESSED_CHARACTERS'),
             [re.sub('_', ' ', league) for league in parser.get('APP', 'LIVE_LEAGUES').split(',')],
+            parser.getint('APP', 'MAX_CHARACTER_TIMEOUT'),
             parser.get('APP', 'LOCKFILE_NAME'),
             parser.get('DB', 'DATABASE_HOST'),
             parser.get('DB', 'DATABASE_PORT'),

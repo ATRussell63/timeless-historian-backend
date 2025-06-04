@@ -9,7 +9,7 @@ from app.app_config import get_config
 from app.db import get_engine
 from app.models import c_, l_, j_, jtl_, gl_
 from sqlalchemy.dialects.postgresql import insert
-from sqlalchemy.sql import select, update
+from sqlalchemy.sql import select, update, func
 
 from app.util.parse_jewel import ParsedJewel, parse_jewel_json_object, mf_mod_int_to_strs, mf_mod_strs_to_int
 from app.util.ggg_api import GGG_Api
@@ -119,7 +119,7 @@ def send_character_to_timeout(character_id: str) -> int:
     with get_engine().connect() as conn:
         up = update(c_).returning(c_.c.next_timeout_max) \
             .where(c_.c.character_id == character_id) \
-            .values(next_timeout_max=c_.c.next_timeout_max * 2,
+            .values(next_timeout_max=func.least(c_.c.next_timeout_max * 2, get_config().MAX_CHARACTER_TIMEOUT),
                     timeout_counter=c_.c.next_timeout_max)
         results = conn.execute(up).scalar()
         conn.commit()

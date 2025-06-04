@@ -1,4 +1,5 @@
 import pytest
+import math
 from sqlalchemy.sql import select, update
 
 from app.models import c_, j_, l_
@@ -185,6 +186,24 @@ def test_process_repeat_scans_do_not_generate_multiple_jewel_rows(test_config, d
     with db_engine.connect() as conn:
         results = conn.execute(select(j_.c.jewel_id).select_from(j_).join(c_, c_.c.character_id == j_.c.character_id).where(c_.c.character_name == 'DishwashingMachine')).fetchall()
         assert len(results) == 1
+
+
+def test_process_obeys_max_timeout_from_config(test_config, db_engine, clean_tables, get_hardcore_settlers_id):
+    max_timeout = test_config.MAX_CHARACTER_TIMEOUT
+    BOTYARA['league_id'] = get_hardcore_settlers_id
+    pc.process_single_ladder_entry(BOTYARA)
+
+    for x in range(int(math.log2(max_timeout)) + 1):
+        with db_engine.connect() as conn:
+            conn.execute(update(c_).where(c_.c.character_name == 'DishwashingMachine').values(timeout_counter=0))
+            conn.commit()
+        
+        pc.process_single_ladder_entry(BOTYARA)
+
+    with db_engine.connect() as conn:
+        results = conn.execute(select(c_.c.next_timeout_max).select_from(c_).where(c_.c.character_name == 'DishwashingMachine')).scalar()
+        assert results == max_timeout
+
 
 # def test_process_steve_isolated(test_config, db_engine, delete_steve):
 #     settlers_id = 19
