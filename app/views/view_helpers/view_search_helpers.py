@@ -1,16 +1,17 @@
 from dataclasses import dataclass
 from flask import Request
-from typing import List
+from typing import List, Optional
 import copy
 from sqlalchemy.engine import Row
 import logging
 from app.db import get_engine
 from app.models import c_, l_, j_, jtl_, gl_, mml_, cl_, sl_, v_
-from sqlalchemy.sql import select, func, distinct, alias, table, column
-from sqlalchemy import text, cast, literal_column, and_
+from sqlalchemy.sql import select, func, distinct, alias, table
+from sqlalchemy import text, cast, literal_column, and_, Column, values, Integer, Numeric
 from sqlalchemy.dialects.postgresql import INTEGER, TEXT
 from sqlalchemy.sql.expression import lateral, true, null
 from sqlalchemy.orm import aliased
+from app.util.lut_cache import LutData
 
 logger = logging.getLogger('main')
 
@@ -36,6 +37,50 @@ def parse_jewel_search_request(request: Request):
             general=request_body['general'],
             mf_mods=request_body.get('mf_mods', [])
         )
+    except KeyError as e:
+        logger.error(f'Search request missing a parameter: {e}')
+    
+    return search_data
+
+
+@dataclass
+class BulkSearchRequest:
+    i: int
+    x: int
+    y: int
+    jewel_type: int
+    seed: int
+    general: int
+    mf_mods: Optional[int]
+
+
+def parse_bulk_query(request: Request) -> List[BulkSearchRequest]:
+    search_data = []
+
+    lut = LutData()
+
+    try:
+        request_body = request.json
+        jewels = request_body['jewels']
+        for jewel in jewels:
+            jewel_type_id = lut.jewel_type_ids[jewel['jewel_type']]
+            general_id = lut.general_list[jewel['general']]
+
+            mf_mod_bits = None
+            mf_mods = jewel.get('mf_mods', []) or []
+            if len(mf_mods) > 0:
+                mf_mod_bits = lut.mf_mod_map[mf_mods[0]]
+                mf_mod_bits += lut.mf_mod_map[mf_mods[1]]
+
+            search_data.append(BulkSearchRequest(
+                i=int(jewel['i']),
+                x=int(jewel['x']),
+                y=int(jewel['y']),
+                jewel_type=int(jewel_type_id),
+                seed=int(jewel['seed']),
+                general=int(general_id),
+                mf_mods=mf_mod_bits
+            ))
     except KeyError as e:
         logger.error(f'Search request missing a parameter: {e}')
     
@@ -109,6 +154,82 @@ def perform_jewel_search(search_data: SearchRequest) -> List[Row]:
         return results
 
 
+def query_bulk_overview(bulk_search_data):
+    """
+        Query each jewel for:
+            - total seed matches
+            - total seed + general matches
+            - total exact matches (MF)
+    """
+
+    input_values = []
+    for idx, jewel in enumerate(bulk_search_data):
+        input_values.append((
+            idx,
+            jewel.x,
+            jewel.y,
+            jewel.jewel_type,
+            jewel.seed,
+            jewel.general,
+            jewel.mf_mods
+        ))
+    
+    idx_col = Column('idx', Integer)
+    x_col = Column('x', Integer)
+    y_col = Column('y', Integer)
+    jewel_type_id_col = Column('jewel_type_id', Integer)
+    seed_col = Column('seed', Integer)
+    general_id_col = Column('general_id', Integer)
+    mf_mods_col = Column('mf_mods', Integer)
+
+    input_tuples = values(
+        idx_col,
+        x_col,
+        y_col,
+        jewel_type_id_col,
+        seed_col,
+        general_id_col,
+        mf_mods_col,
+        name='input_tuples'
+    ).data(input_values).alias('i')
+    
+    q = select(
+        input_tuples.c.idx,
+        input_tuples.c.x,
+        input_tuples.c.y,
+        input_tuples.c.jewel_type_id,
+        input_tuples.c.seed,
+        input_tuples.c.general_id,
+        input_tuples.c.mf_mods,
+
+        select(func.count()).select_from(j_)
+        .where(and_(j_.c.jewel_type_id == input_tuples.c.jewel_type_id,
+                    j_.c.seed == input_tuples.c.seed)).scalar_subquery().label('seed_match'),
+
+        select(func.count()).select_from(j_)
+        .where(and_(j_.c.jewel_type_id == input_tuples.c.jewel_type_id,
+                    j_.c.seed == input_tuples.c.seed,
+                    j_.c.general_id == input_tuples.c.general_id)).scalar_subquery().label('general_match'),
+
+        select(func.count()).select_from(j_)
+        .where(and_(j_.c.jewel_type_id == input_tuples.c.jewel_type_id,
+                    j_.c.seed == input_tuples.c.seed,
+                    j_.c.general_id == input_tuples.c.general_id,
+                    # cast mf mods as numeric, safe compare (null matches null)
+                    cast(j_.c.mf_mods, Numeric).isnot_distinct_from(cast(input_tuples.c.mf_mods, Numeric)))).scalar_subquery().label('exact_match'),
+    )
+
+    return q
+
+
+def perform_bulk_overview(bulk_search_data: List[BulkSearchRequest]):
+
+    with get_engine().connect() as conn:
+        query = query_bulk_overview(bulk_search_data)
+        results = conn.execute(query)
+        return results
+
+
 def format_jewel_search_results(search_results: List[Row], search_data: SearchRequest) -> dict:
     output = {}
 
@@ -140,3 +261,21 @@ def format_jewel_search_results(search_results: List[Row], search_data: SearchRe
         output[row['league_name']]['jewels'].append(formatted_row)
 
     return output
+
+
+def format_bulk_overview_results(query_results: List[Row]) -> dict:
+    row_output = []
+
+    for row in query_results.mappings():
+        row_output.append({
+            'i': row['idx'],
+            'x': row['x'],
+            'y': row['y'],
+            'seed_match': row['seed_match'],
+            'general_match': row['general_match'],
+            'exact_match': row['exact_match']
+        })
+    
+    return {
+        'results': row_output
+    }
