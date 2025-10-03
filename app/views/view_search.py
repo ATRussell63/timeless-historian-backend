@@ -72,7 +72,7 @@ def view_bulk_overview():
     try:
         bulk_request_data = parse_bulk_query(request)
         overview_query_results = perform_bulk_overview(bulk_request_data)
-        response_body = format_bulk_overview_results(overview_query_results)
+        response_body = format_bulk_overview_results(bulk_request_data, overview_query_results)
     except Exception as e:
         return jsonify({'error': f'{e}'}), 500
 

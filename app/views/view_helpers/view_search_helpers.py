@@ -48,10 +48,13 @@ class BulkSearchRequest:
     i: int
     x: int
     y: int
+    jewel_type_str: str
     jewel_type: int
     seed: int
     general: int
+    general_str: str
     mf_mods: Optional[int]
+    mf_mods_strs: List[str]
 
 
 def parse_bulk_query(request: Request) -> List[BulkSearchRequest]:
@@ -76,10 +79,13 @@ def parse_bulk_query(request: Request) -> List[BulkSearchRequest]:
                 i=int(jewel['i']),
                 x=int(jewel['x']),
                 y=int(jewel['y']),
+                jewel_type_str=jewel['jewel_type'],
                 jewel_type=int(jewel_type_id),
                 seed=int(jewel['seed']),
                 general=int(general_id),
-                mf_mods=mf_mod_bits
+                general_str=jewel['general'],
+                mf_mods=mf_mod_bits,
+                mf_mods_strs=mf_mods
             ))
     except KeyError as e:
         logger.error(f'Search request missing a parameter: {e}')
@@ -263,17 +269,21 @@ def format_jewel_search_results(search_results: List[Row], search_data: SearchRe
     return output
 
 
-def format_bulk_overview_results(query_results: List[Row]) -> dict:
+def format_bulk_overview_results(bulk_request_data: List[BulkSearchRequest], query_results: List[Row]) -> dict:
     row_output = []
 
-    for row in query_results.mappings():
+    for i, row in enumerate(query_results.mappings()):
         row_output.append({
             'i': row['idx'],
             'x': row['x'],
             'y': row['y'],
             'seed_match': row['seed_match'],
             'general_match': row['general_match'],
-            'exact_match': row['exact_match']
+            'exact_match': row['exact_match'],
+            'jewel_type': bulk_request_data[i].jewel_type_str,
+            'seed': bulk_request_data[i].seed,
+            'general': bulk_request_data[i].general_str,
+            'mf_mods': bulk_request_data[i].mf_mods_strs
         })
     
     return {
