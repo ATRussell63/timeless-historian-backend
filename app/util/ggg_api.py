@@ -91,7 +91,8 @@ class GGG_Api():
             'get-passive-skills': Endpoint(get_config().SITE_BASE_URL + '/character-window/get-passive-skills'),
             # 'ladder': Endpoint(get_config().SITE_BASE_URL + '/league/{league_name}/ladder'),
             'ladder': Endpoint(get_config().SITE_BASE_URL + '/api/ladders'),
-            'league': Endpoint(get_config().SITE_BASE_URL + '/league')
+            'league': Endpoint(get_config().SITE_BASE_URL + '/league'),
+            'get-items': Endpoint(get_config().SITE_BASE_URL + '/character-window/get-items')
         }
 
     def rate_limited_get(self, endpoint: Endpoint, params: dict, url_fmt_args: dict = None) -> Response:
@@ -155,4 +156,19 @@ class GGG_Api():
         }
 
         response = self.rate_limited_get(self.ENDPOINTS['league'], params)
+        return response
+    
+    def get_equipped_items(self, account_name: str, character_name: str, realm: str = 'pc') -> Response:
+        
+        params = {
+            'accountName': account_name,
+            'character': character_name,
+            'realm': realm
+        }
+
+        try:
+            response = self.rate_limited_get(self.ENDPOINTS['get-items'], params)
+        except HTTPError as e:
+            if '403' in str(e):
+                raise PrivateAccountException(str(e))
         return response

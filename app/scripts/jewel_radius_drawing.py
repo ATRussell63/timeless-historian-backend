@@ -27,7 +27,7 @@ class JewelDrawing():
         self._TREE_DATA = None
         # TODO - marauder bottom starting node and quickstep have caused problems before
         #        I don't have an intelligent reason for this value, it's a manual tuning issue
-        self.TIMELESS_JEWEL_RADIUS = 1792
+        self.TIMELESS_JEWEL_RADIUS = 1800
 
     @property
     def tree_data(self):
@@ -293,7 +293,33 @@ class JewelDrawing():
         )
         return edge
 
-    def make_pre_transform_drawing(self, api_jewel_id: int, allocated_hashes: List[int]) -> dict:
+    def lookup_hashes_from_node_names(self, anointed_node_names: List[str]) -> List[int]:
+        notables_processed = []
+        hash_list = []
+        # I was tempted to hardcode ignore Worship the Blightheart but we'll keep it in here
+        # blighted nodes get filtered in a later process
+        tree_notables = [node for node in self.tree_data['nodes'].values() if node.get('isNotable') is True or node.get('isBlighted') is True]
+        
+        for node in tree_notables:
+            try:
+                notable_idx = anointed_node_names.index(node['name'])
+                # assumed to be found, value error if not
+                hash_list.append(node['skill'])
+                notables_processed.append(anointed_node_names[notable_idx])
+            except ValueError:
+                pass
+
+            if set(anointed_node_names) == set(notables_processed):
+                break
+        
+        return hash_list
+
+    def make_pre_transform_drawing(self, api_jewel_id: int, allocated_hashes: List[int], anointed_node_names: List[str]) -> dict:
+        # convert anointed notables into indices, add to hashes list
+        anointed_hashes = self.lookup_hashes_from_node_names(anointed_node_names)
+        allocated_hashes.extend(anointed_hashes)
+        allocated_hashes = list(set(allocated_hashes))
+
         j_map = self.build_jewel_to_nodes_in_radius_map()
 
         output_obj = None
@@ -772,7 +798,7 @@ class JewelDrawing():
 
         return drawing
 
-    def make_drawing(self, api_response: dict, jewel: ParsedJewel) -> DrawingRoot:
+    def make_drawing(self, api_response: dict, jewel: ParsedJewel, anointed_node_names: List[str]) -> DrawingRoot:
         """ We need the api response for the list of allocated nodes and the jewel api id
             (since we're not saving that one in the db).
  
@@ -782,7 +808,7 @@ class JewelDrawing():
         
         allocated_hashes = api_response['hashes']
 
-        drawing = self.make_pre_transform_drawing(int(jewel.socket_id), allocated_hashes)
+        drawing = self.make_pre_transform_drawing(int(jewel.socket_id), allocated_hashes, anointed_node_names)
         drawing, jewel_stats = self.apply_jewel_changes(drawing, jewel)
         drawing.curved_edges = self.coalesce_curved_edges(drawing)
         drawing.straight_edges = self.coalesce_straight_edges(drawing)

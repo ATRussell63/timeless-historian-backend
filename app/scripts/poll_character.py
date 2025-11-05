@@ -185,7 +185,7 @@ def db_jewel_matches_equipped(db_jewel: Jewel, equipped_jewel: ParsedJewel) -> b
         # I can't compare the whole drawing because sub lists are unhashable to set
 
 
-def get_equipped_timeless_jewel_obj(response_body: dict) -> Optional[ParsedJewel]:
+def get_equipped_timeless_jewel(response_body: dict) -> Optional[ParsedJewel]:
     for item in response_body['items']:
         if item['typeLine'] == 'Timeless Jewel':
             jewel = parse_jewel_json_object(item, LD_CACHE)
@@ -193,22 +193,36 @@ def get_equipped_timeless_jewel_obj(response_body: dict) -> Optional[ParsedJewel
             for jewel_socket in response_body['jewel_data']:
                 if response_body['jewel_data'][jewel_socket]['type'] == 'JewelTimeless':
                     jewel.socket_id = jewel_socket
-                    break
-
-            try:
-                jd = JewelDrawing()
-                jewel.drawing = jd.make_drawing(api_response=response_body,
-                                                jewel=jewel)
-            except Exception as e:
-                logger.error(f'Error processing drawing for jewel: {e}')
-                jewel.drawing = {
-                    'error': str(e)
-                }
-                return None
-            
-            return jewel
-
+                    return jewel
     return None
+
+
+def generate_jewel_drawing(jewel: ParsedJewel, response_body: dict, anointed_node_names: List[str]) -> ParsedJewel:
+    try:
+        jd = JewelDrawing()
+        jewel.drawing = jd.make_drawing(api_response=response_body,
+                                        jewel=jewel,
+                                        anointed_node_names=anointed_node_names)
+    except Exception as e:
+        logger.error(f'Error processing drawing for jewel: {e}')
+        jewel.drawing = {
+            'error': str(e)
+        }
+    
+    return jewel
+
+
+def get_anointed_node_names(items_response_body: dict) -> List[str]:
+    anointed_notables = []
+    for item in items_response_body['items']:
+        enchant_mods = item.get('enchantMods', [])
+        for mod in enchant_mods:
+            if 'Allocates' not in mod:
+                continue
+            else:
+                anointed_notables.append(mod.split('Allocates ')[1])
+    
+    return anointed_notables
 
 
 def update_jewel_scan_date_and_drawing(jewel_id: int, jewel_drawing: dict):
@@ -279,26 +293,35 @@ def process_single_ladder_entry(ladder_entry: dict):
         logger.debug(f'Finished processing {character_name} - {account_name} - {ggg_id}')
         return
 
+    jewel = None
+    anointed_nodes = []
     try:
         api = GGG_Api()
         response = api.get_passive_skills(account_name, character_name)
+        response_body = response.json()
+        jewel = get_equipped_timeless_jewel(response_body)
+
+        # website passive tree viewer doesn't include anointed nodes
+        if jewel:
+            items_response = api.get_equipped_items(account_name, character_name)
+            anointed_nodes = get_anointed_node_names(items_response.json())
+
     except PrivateAccountException:
         logger.error(f'This account was identified as private. \
                        Account Name: {account_name} - Character: {character_name}')
         logger.debug(f'Finished processing {character_name} - {account_name} - {ggg_id}')
         return
 
-    # is the character wearing a timeless jewel?
-    parsed_jewel = get_equipped_timeless_jewel_obj(response.json())
-
-    if parsed_jewel is None:
+    if jewel:
+        jewel = generate_jewel_drawing(jewel, response_body, anointed_nodes)
+    else:
         logger.debug(f'Character {character_name} was not wearing a timeless jewel, sending them to time out.')
         send_character_to_timeout(character_id)
         logger.debug(f'Finished processing {character_name} - {account_name} - {ggg_id}')
         return
 
     # convert jewel to dict
-    parsed_jewel.drawing = dataclasses.asdict(parsed_jewel.drawing)
+    jewel.drawing = dataclasses.asdict(jewel.drawing)
 
     def cull_nodes(drawing):
         for node in drawing['nodes'].values():
@@ -365,36 +388,36 @@ def process_single_ladder_entry(ladder_entry: dict):
         return edge
 
     # trim down jewel data
-    parsed_jewel.drawing = cull_nodes(parsed_jewel.drawing)
-    parsed_jewel.drawing.pop('jewel_coords')
+    jewel.drawing = cull_nodes(jewel.drawing)
+    jewel.drawing.pop('jewel_coords')
     
-    for node in parsed_jewel.drawing['nodes']:
-        parsed_jewel.drawing['nodes'][node] = minimize_node_field_names(parsed_jewel.drawing['nodes'][node])
+    for node in jewel.drawing['nodes']:
+        jewel.drawing['nodes'][node] = minimize_node_field_names(jewel.drawing['nodes'][node])
     
     new_straight_edges = []
-    for edge in parsed_jewel.drawing['straight_edges']:
+    for edge in jewel.drawing['straight_edges']:
         new_straight_edges.append(minimize_straight_edge_field_names(edge))
     
     new_curved_edges = []
-    for edge in parsed_jewel.drawing['curved_edges']:
+    for edge in jewel.drawing['curved_edges']:
         new_curved_edges.append(minimize_curved_edge_field_names(edge))
     
-    parsed_jewel.drawing['straight_edges'] = new_straight_edges
-    parsed_jewel.drawing['curved_edges'] = new_curved_edges
+    jewel.drawing['straight_edges'] = new_straight_edges
+    jewel.drawing['curved_edges'] = new_curved_edges
 
     # is equipped jewel the same that's already in the db?
     db_jewel = get_character_jewel(character_id)
 
     # if they are using the same ITEM (type, general, seed, mf_mods) and in the same slot
-    if db_jewel_matches_equipped(db_jewel, parsed_jewel):
+    if db_jewel_matches_equipped(db_jewel, jewel):
         # update the drawing but put them in timeout
         logger.debug(f"Character {character_name}'s jewel is the same item as before, in the same socket.")
-        update_jewel_scan_date_and_drawing(db_jewel.jewel_id, parsed_jewel.drawing)
+        update_jewel_scan_date_and_drawing(db_jewel.jewel_id, jewel.drawing)
         timeout = send_character_to_timeout(character_id)
         logger.debug(f'Sending them to time out for {timeout} runs.')
     else:
         # add new jewel
-        add_jewel(parsed_jewel, character_id)
+        add_jewel(jewel, character_id)
         reset_timeout_max(character_id)
         logger.debug(f'Finished processing {character_name} - {account_name} - {ggg_id}')
 

@@ -95,7 +95,12 @@ create table league(
 
 insert into league (league_name, hardcore, league_start, league_end) values
 ('Hardcore Settlers', TRUE, '2024-07-26 18:00:00+00:00', '2025-06-09 18:00:00+00:00'),
-('Settlers', TRUE, '2024-07-26 18:00:00+00:00', '2025-06-09 18:00:00+00:00');
+('Settlers', TRUE, '2024-07-26 18:00:00+00:00', '2025-06-09 18:00:00+00:00'),
+('Hardcore Mercenaries', TRUE, '2025-06-13 20:00:00+00:00', '2025-10-27 21:00:00+00:00'),
+('Mercenaries', TRUE, '2025-06-13 20:00:00+00:00', '2025-10-27 21:00:00+00:00'),
+('Harcore Keepers', TRUE, '2025-10-31 19:00:00+00:00', NULL),
+('Keepers', TRUE, '2025-10-31 19:00:00+00:00', NULL),
+;
 
 create table character(
     character_id bigserial primary key,
