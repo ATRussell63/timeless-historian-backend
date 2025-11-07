@@ -495,20 +495,30 @@ class JewelDrawing():
                 else:
                     continue
             else:
-                # string in sd
-                sd = effect['sd'][stat_index]
-                # get val of stat
-                val = re.search(capture_val, sd).group(0)
-                val = float(val) if '.' in val else int(val)
-
-                if jewel_stats.get(stat_name) is None:
-                    template_str = re.sub(str(val), '{val}', sd, count=1)
-                    jewel_stats[stat_name] = {
-                        'template': template_str,
-                        'val': val
-                    }
+                if effect['dn'] in ('Legacy of the Vaal', 'Might of the Vaal'):
+                    # these come with their own pre-formatted values
+                    if jewel_stats.get(stat_name) is None:
+                        jewel_stats[stat_name] = {
+                            'template': v['template'],
+                            'val': v['val']
+                        }
+                    else:
+                        jewel_stats[stat_name]['val'] += v['val']
                 else:
-                    jewel_stats[stat_name]['val'] += val
+                    # string in sd
+                    sd = effect['sd'][stat_index]
+                    # get val of stat
+                    val = re.search(capture_val, sd).group(0)
+                    val = float(val) if '.' in str(val) else int(val)
+
+                    if jewel_stats.get(stat_name) is None:
+                        template_str = re.sub(str(val), '{val}', sd, count=1)
+                        jewel_stats[stat_name] = {
+                            'template': template_str,
+                            'val': val
+                        }
+                    else:
+                        jewel_stats[stat_name]['val'] += val
 
         return jewel_stats
 
