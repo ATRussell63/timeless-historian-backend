@@ -285,6 +285,8 @@ class NodeLookup():
         for i, x in enumerate(reversed(trimmed_data)):
             if x == 0:
                 last_zero = -(i + 1)
+            else:
+                break
 
         if last_zero is not None:
             trimmed_data = trimmed_data[0:last_zero]
@@ -296,13 +298,6 @@ class NodeLookup():
             replacement_node = copy.deepcopy(self.replacements[int(trimmed_data[0]) - 94])
             new_stats = {}
             for x in range(len(trimmed_data) - 1):
-
-                val = str(trimmed_data[x + 1])
-                # stat isn't a whole number, need to format it
-                if '.' in replacement_node['sd'][x]:
-                    # reverse it and slap a decimal point in there
-                    val = val[-1] + '.' + val[0]
-                
                 # sd is not necessarily sorted in the same order that the data is
                 # so (29, 1) might be intended for nodes with ranges [(1-1),(25-30)]
                 # need to process in order of node['stats'][x]['index']
@@ -317,6 +312,12 @@ class NodeLookup():
 
                 # which index in sd is the stat our val is intended for?
                 sd_index = replacement_node['sortedStats'].index(stat_name)
+
+                val = str(trimmed_data[x + 1])
+                # stat isn't a whole number, need to format it
+                if '.' in replacement_node['sd'][sd_index]:
+                    # reverse it and slap a decimal point in there
+                    val = val[-1] + '.' + val[0]
                 
                 modified_stat = re.sub(capture_roll_range,
                                        val,
@@ -348,16 +349,42 @@ class NodeLookup():
             
             replacement_node = {
                 'dn': name,
-                'sd': []
+                'sd': [],
+                'stats': {}
             }
 
             half_size = int(len(trimmed_data) / 2)
             for x in range(half_size):
-                stat_string = re.sub(capture_roll_range,
-                                     str(trimmed_data[x + half_size]),
-                                     self.additions[trimmed_data[x]]['sd'][0])
-                replacement_node['sd'].append(stat_string)
+                stats_dict = copy.deepcopy(self.additions[trimmed_data[x]]['stats'])
+                # there's always just 1 stat here, apply the value directly to the 'stat'
+                stat_name = next(iter(stats_dict.keys()))
+                stat_val = trimmed_data[x + half_size]
+                stat_str = self.additions[trimmed_data[x]]['sd'][0]
+                stats_dict[stat_name]['val'] = stat_val
+                stats_dict[stat_name]['fmt_str'] = stat_str
+
+                # later steps make a template string for the stat, we can do that early
+                if '(' not in stat_str:
+                    stats_dict[stat_name]['template'] = re.sub(str(trimmed_data[x + half_size]), '{val}', stat_str, count=1)
+                else:
+                    stats_dict[stat_name]['template'] = re.sub(capture_roll_range, '{val}', stat_str, count=1)
+
+                if stat_name in replacement_node['stats'].keys():
+                    # we already added this stat, just add its value to the existing one
+                    replacement_node['stats'][stat_name]['val'] += stats_dict[stat_name]['val']
+                else:
+                    replacement_node['stats'][stat_name] = stats_dict[stat_name]
             
+            # format each stat in replacement_node['stats'], put them in sd
+            for stat in replacement_node['stats'].values():
+                # several of the stats are not formatted with a range like '(1-4)% to borgus tendency'
+                regex = capture_roll_range if '(' in stat['fmt_str'] else r'(\d+)'
+                
+                stat_string = re.sub(regex,
+                                     str(stat['val']),
+                                     stat['fmt_str'])
+                replacement_node['sd'].append(stat_string)
+                
             return replacement_node, True
 
         else:
