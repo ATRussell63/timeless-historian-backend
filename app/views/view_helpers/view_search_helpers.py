@@ -93,12 +93,7 @@ def parse_bulk_query(request: Request) -> List[BulkSearchRequest]:
     return search_data
 
 
-def query_jewel_search(search_data: SearchRequest):
-
-    # TODO - # .distinct(c_.c.ggg_id) \
-    # maybe include this again later, jewels are supposed to update scan date instead of new inserts
-    # but I might change my mind later about this
-
+def base_jewel_query():
     q = select(l_.c.league_name,
                l_.c.league_id,
                l_.c.hardcore,
@@ -130,8 +125,19 @@ def query_jewel_search(search_data: SearchRequest):
         .join(cl_, cl_.c.class_id == c_.c.class_id) \
         .join(sl_, sl_.c.socket_id == j_.c.socket_id) \
         .join(v_, v_.c.account_name == c_.c.account_name, isouter=True) \
-        .where((j_.c.seed == search_data.seed) & (jtl_.c.type_name == search_data.jewel_type)) \
-        .order_by(c_.c.ggg_id, j_.c.scan_date.desc(), l_.c.league_id)
+        
+    return q
+
+
+def query_jewel_search(search_data: SearchRequest):
+
+    # TODO - # .distinct(c_.c.ggg_id) \
+    # maybe include this again later, jewels are supposed to update scan date instead of new inserts
+    # but I might change my mind later about this
+
+    q = base_jewel_query()
+    q = q.where((j_.c.seed == search_data.seed) & (jtl_.c.type_name == search_data.jewel_type))
+    q = q.order_by(c_.c.ggg_id, j_.c.scan_date.desc(), l_.c.league_id)
 
     if search_data.jewel_type == 'Militant Faith':
         
@@ -148,6 +154,11 @@ def query_jewel_search(search_data: SearchRequest):
         q = q.where(mml1.c.mod_text == search_data.mf_mods[0])
         q = q.where(mml2.c.mod_text == search_data.mf_mods[1])
 
+    return q
+
+
+def query_fetch_latest_jewel():
+    q = base_jewel_query().order_by(j_.c.jewel_id.desc()).limit(1)
     return q
 
 
@@ -236,13 +247,15 @@ def perform_bulk_overview(bulk_search_data: List[BulkSearchRequest]):
         return results
 
 
-def format_jewel_search_results(search_results: List[Row], search_data: SearchRequest) -> dict:
+def format_jewel_search_results(search_results: List[Row], search_data: Optional[SearchRequest] = None) -> dict:
     output = {}
 
     for row in search_results.mappings():
         formatted_row = copy.deepcopy(dict(row))
         
-        formatted_row['general_match'] = formatted_row['general'] == search_data.general
+        if search_data:
+            formatted_row['general_match'] = formatted_row['general'] == search_data.general
+        
         formatted_row['socket'] = {
             'id': formatted_row['socket_id'],
             'name': formatted_row['socket_name'],

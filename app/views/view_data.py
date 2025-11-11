@@ -1,6 +1,7 @@
 import logging
 from flask import Blueprint, jsonify, request
-from app.views.view_helpers.view_data_helpers import execute_query_data_summary, execute_query_fetch_random_jewels, request_all
+from app.views.view_helpers.view_data_helpers import execute_query_data_summary, execute_query_fetch_random_jewels, \
+    request_all, execute_query_fetch_latest_jewel
 from app.views.view_helpers.view_search_helpers import format_jewel_search_results
 
 data = Blueprint('data', __name__)
@@ -47,10 +48,17 @@ def view_data_sample():
     return jsonify(response), 200 
 
 
-@data.route('/data/socket', methods=['GET'])
-def view_data_socket_lut():
-    """ Return the socket_lut table's contents. """
-    pass
+@data.route('/data/latest', methods=['GET'])
+def view_data_latest_jewel():
+    """ Return the latest jewel added to the database. """
+    
+    logger.debug('/data/latest')
+    response = {}
+    try:
+        data = execute_query_fetch_latest_jewel()
+        response['results'] = format_jewel_search_results(data)
+    
+    except Exception as e:
+        return jsonify({'error': f'{e}'}), 500
 
-
-# maybe I'm not actually doing the lut stuff
+    return jsonify(response), 200

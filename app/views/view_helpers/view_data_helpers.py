@@ -7,7 +7,8 @@ from sqlalchemy.dialects.postgresql import INTEGER, TEXT
 from sqlalchemy.sql.expression import lateral, true, null
 from sqlalchemy.orm import aliased
 from sqlalchemy.engine import Row
-from app.views.view_helpers.view_search_helpers import query_jewel_search, SearchRequest, mml1, mml2
+from app.views.view_helpers.view_search_helpers import query_jewel_search, query_fetch_latest_jewel, \
+    SearchRequest, mml1, mml2
 
 
 def query_data_summary():
@@ -45,6 +46,13 @@ def query_fetch_random_jewels(limit: int):
 
 def execute_query_fetch_random_jewels(limit: int):
     q = query_fetch_random_jewels(limit)
+    with get_engine().connect() as conn:
+        results = conn.execute(q)
+        return results
+
+
+def execute_query_fetch_latest_jewel():
+    q = query_fetch_latest_jewel()
     with get_engine().connect() as conn:
         results = conn.execute(q)
         return results
