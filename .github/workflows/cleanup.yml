@@ -1,0 +1,17 @@
+name: Cleanup GHCR
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 0 * * 0'  # weekly
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Cleanup old images
+        uses: crazy-max/ghaction-github-package-cleanup@v2
+        with:
+          package: timeless-historian-backend
+          keep-last: 5
+          token: ${{ secrets.GITHUB_TOKEN }}
