@@ -437,6 +437,9 @@ class JewelDrawing():
         elif timeless_jewel.jewel_type == 'Brutal Restraint':
             main_string = f'Denoted service of {timeless_jewel.seed} dekhara in the akhara of {timeless_jewel.general}'
             conquered_str += 'Maraketh'
+        elif timeless_jewel.jewel_type == 'Heroic Tragedy':
+            main_string = f'Remembrancing {timeless_jewel.seed} songworthy deeds by the line of {timeless_jewel.general}'
+            conquered_str += 'Kalguur'
         body = [main_string, conquered_str]
         if timeless_jewel.mf_mods:
             body += timeless_jewel.mf_mods

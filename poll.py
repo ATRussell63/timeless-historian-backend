@@ -9,8 +9,11 @@ required_data_files = ['BrutalRestraint',
                        'LethalPride',
                        'ElegantHubris',
                        'MilitantFaith',
+                       'HeroicTragedy',
                        # node->index lookup
                        'node_indices.csv',
+                       # mapping file to LegionPassives
+                       'mapping_indices.json',
                        # replacements and additions file
                        'LegionPassives.json',
                        # the passive tree
