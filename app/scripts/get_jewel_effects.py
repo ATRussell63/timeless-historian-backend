@@ -1,4 +1,4 @@
-from typing import Dict, List, Tuple
+from typing import Dict, Tuple
 import pathlib
 import csv
 import numpy as np
@@ -14,6 +14,9 @@ BR = 'Brutal Restraint'
 EH = 'Elegant Hubris'
 MF = 'Militant Faith'
 GV = 'Glorious Vanity'
+HT = 'Heroic Tragedy'
+
+MAGIC_NUMBER = 96
 
 
 class NodeLookup():
@@ -44,6 +47,11 @@ class NodeLookup():
             'maximum': 8000,
             'increment': 1
         },
+        HT: {
+            'minimum': 100,
+            'maximum': 8000,
+            'increment': 1
+        }
     }
 
     GENERAL_TO_KEYSTONE_MAP = {
@@ -61,7 +69,10 @@ class NodeLookup():
         'Rakiata': 'Tempered by War',
         'Avarius': 'Power of Purpose',
         'Dominus': 'Inner Conviction',
-        'Maxarius': 'Transcendence'
+        'Maxarius': 'Transcendence',
+        'Vorana': 'Black Scythe Training',
+        'Uhtred': 'Celestial Mathematics',
+        'Medved': 'The Unbreaking Circle'
     }
 
     BASIC_STAT_NODES = ['Strength', 'Dexterity', 'Intelligence']
@@ -69,8 +80,10 @@ class NodeLookup():
     def __init__(self):
         self.DATA_DIR = get_data_path()
         self.CSV_PATH = self.DATA_DIR + 'node_indices.csv'
+        self.ADD_REPLACE_PATH = self.DATA_DIR + 'mapping_indices.json'
         self.PASSIVE_LUT_PATH = self.DATA_DIR + 'LegionPassives.json'
         self.FAST_GV_LOOKUP = self.DATA_DIR + 'GloriousVanityFAST'
+        self._add_replace_map = None
         self._binary_data = {}
         self._node_id_index_csv = None
         self._node_replacements = None
@@ -90,6 +103,14 @@ class NodeLookup():
                                            for row in reader}
 
         return self._node_id_index_csv
+
+    @property
+    def add_replace_map(self):
+        if not self._add_replace_map:
+            with open(self.ADD_REPLACE_PATH, 'r') as map_json:
+                self._add_replace_map = json.loads(map_json.read())
+        
+        return self._add_replace_map
 
     @property
     def replacements(self):
@@ -193,6 +214,13 @@ class NodeLookup():
                 return self.devotion_node, True
         elif jewel_type == GV:
             raise ValueError("Don't use this function for GV")
+        elif jewel_type == HT:
+            # applies 2% increased ward to non-attribute small passives
+            if node.name not in self.BASIC_STAT_NODES:
+                return self.df_find_addition_by_id('kalguuran_small_ward'), False
+            # applies 1% increased ward to attribute small passives
+            else:
+                return self.df_find_addition_by_id('kalguuran_attribute_ward'), False
         else:
             raise ValueError(f'Not a valid jewel type: {jewel_type}')
 
@@ -218,12 +246,24 @@ class NodeLookup():
         index_of_change = int_array[dfile_index]
         offset = index_of_change
 
-        if (int(offset) - 94) < 0:
+        index = self.get_add_replace_index(jewel_type, offset) 
+
+        if (int(index) - MAGIC_NUMBER) < 0:
             # additions
-            return self.additions[offset], False
+            return self.additions[index], False
         else:
             # replacements
-            return self.replacements[offset - 94], True
+            return self.replacements[index - MAGIC_NUMBER], True
+
+    def get_add_replace_index(self, jewel_type: str, offset: int) -> int:
+        """ *Mirage League* The mapping is a little different now. Rather than directly indexing 
+            the additions and replacements map, there's a new per-jewel mapping to those node effect indices.
+            
+            Unfortunately I can't save the json to a file without converting the offset keys to a string,
+            so this helper method helps un-spaghettify my random casts everywhere.
+        """
+
+        return self.add_replace_map[jewel_type][str(offset)]
 
     def build_fast_gv_lookup_file(self):
         """ The way the data is layed out makes it impossible to jump directly to the data we want.
@@ -295,7 +335,8 @@ class NodeLookup():
 
         # replacement with 1 or 2 variable stats
         if len(trimmed_data) == 2 or len(trimmed_data) == 3:
-            replacement_node = copy.deepcopy(self.replacements[int(trimmed_data[0]) - 94])
+            index = self.get_add_replace_index('Glorious Vanity', str(trimmed_data[0])) - MAGIC_NUMBER
+            replacement_node = copy.deepcopy(self.replacements[index])
             new_stats = {}
             for x in range(len(trimmed_data) - 1):
                 # sd is not necessarily sorted in the same order that the data is
@@ -339,7 +380,8 @@ class NodeLookup():
 
             # the additions object does NOT have any indication of which it is (offense/defense)
             # but it has the same 'id' string as the corresponding replacement node
-            additions_id_str = self.additions[trimmed_data[0]]['id']
+            index = self.get_add_replace_index('Glorious Vanity', int(trimmed_data[0]))
+            additions_id_str = self.additions[index]['id']
             icon_name = list(filter(lambda n: n['id'] == additions_id_str, self.replacements))[0]['icon']
             is_offense = 'Offensive' in icon_name
             if is_offense:
@@ -355,11 +397,12 @@ class NodeLookup():
 
             half_size = int(len(trimmed_data) / 2)
             for x in range(half_size):
-                stats_dict = copy.deepcopy(self.additions[trimmed_data[x]]['stats'])
+                index = self.get_add_replace_index('Glorious Vanity', trimmed_data[x])
+                stats_dict = copy.deepcopy(self.additions[index]['stats'])
                 # there's always just 1 stat here, apply the value directly to the 'stat'
                 stat_name = next(iter(stats_dict.keys()))
                 stat_val = trimmed_data[x + half_size]
-                stat_str = self.additions[trimmed_data[x]]['sd'][0]
+                stat_str = self.additions[index]['sd'][0]
                 stats_dict[stat_name]['val'] = stat_val
                 stats_dict[stat_name]['fmt_str'] = stat_str
 
