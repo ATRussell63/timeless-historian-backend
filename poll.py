@@ -21,6 +21,7 @@ required_data_files = ['BrutalRestraint',
 
 if __name__ == '__main__':
     config = create_config('./config/config.ini')
+    config.DATABASE_HOST = 'localhost'
     logger = logging.getLogger('main')
 
     if pathlib.Path(config.LOCKFILE_NAME).exists():
