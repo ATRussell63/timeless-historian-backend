@@ -1,7 +1,8 @@
 version: '3.9'
 
 services:
-  timeless_historian_backend:
+  
+  app:
     build:
       context: .
       dockerfile: Dockerfile
@@ -11,3 +12,22 @@ services:
       - .:/timeless:ro
       - ./data:/timeless/data:rw
       - ./config:/timeless/config:rw
+  
+  db:
+    image: postgres:16
+    restart: always
+    environment:
+      POSTGRES_USER:
+      POSTGRES_PASSWORD:
+      POSTGRES_DB:
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+networks:
+  internal_net:
+    driver: bridge
+
+volumes:
+  postgres_data:
