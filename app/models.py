@@ -32,7 +32,8 @@ gl_ = general_lut = Table(
     'general_lut',
     metadata_obj,
     Column('general_id', SMALLINT, primary_key=True),
-    Column('general_name', Text)
+    Column('general_name', Text),
+    Column('keystone_name', Text),
 )
 
 j_ = jewel = Table(
