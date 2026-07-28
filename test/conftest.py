@@ -5,6 +5,7 @@ from app.models import c_, j_, l_
 from sqlalchemy import delete, select
 from sqlalchemy.sql import Delete
 from app.create_app import setup_app
+from test.test_functional.test_scripts.test_poll_character import TEST_CHARACTER
 
 logger = logging.getLogger('main')
 
@@ -56,10 +57,9 @@ def clean_tables(db_engine):
 
 
 @pytest.fixture()
-def delete_divayth_fyr(db_engine):
+def delete_test_character(db_engine):
     with db_engine.connect() as conn:
-        # get his character id
-        q = select(c_.c.character_id).where(c_.c.character_name == 'DIVAYTH_FYR')
+        q = select(c_.c.character_id).where(c_.c.character_name == TEST_CHARACTER['character']['name'])
         c_id = conn.execute(q).scalar()
         conn.execute(delete(j_).where(j_.c.character_id == c_id))
         conn.execute(delete(c_).where(c_.c.character_id == c_id))

@@ -1,4 +1,5 @@
 import logging
+import traceback
 from flask import Blueprint, jsonify, request
 from .view_helpers.view_search_helpers import parse_jewel_search_request, perform_jewel_search, format_jewel_search_results, \
     parse_bulk_query, perform_bulk_overview, format_bulk_overview_results
@@ -41,7 +42,9 @@ def view_search():
         request_data = parse_jewel_search_request(request)
         raw_search_results = perform_jewel_search(request_data)
         response_body['results'] = format_jewel_search_results(raw_search_results, request_data)
+        logger.debug(response_body)
     except Exception as e:
+        logger.error(traceback.format_exc())
         return jsonify({'error': f'{e}'}), 500
 
     return jsonify(response_body), 200
@@ -73,7 +76,9 @@ def view_bulk_overview():
         bulk_request_data = parse_bulk_query(request)
         overview_query_results = perform_bulk_overview(bulk_request_data)
         response_body = format_bulk_overview_results(bulk_request_data, overview_query_results)
+        logger.debug(response_body)
     except Exception as e:
+        logger.error(traceback.format_exc())
         return jsonify({'error': f'{e}'}), 500
 
     return jsonify(response_body), 200

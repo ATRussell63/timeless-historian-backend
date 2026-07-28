@@ -1,4 +1,4 @@
-from typing import Dict, Tuple
+from typing import Dict, Tuple, List
 import pathlib
 import csv
 import numpy as np
@@ -16,10 +16,10 @@ MF = 'Militant Faith'
 GV = 'Glorious Vanity'
 HT = 'Heroic Tragedy'
 
-MAGIC_NUMBER = 96
+MAGIC_NUMBER = 337
 
 
-class NodeLookup():
+class NodeLookup:
 
     JEWEL_TYPES = {
         EH: {
@@ -335,7 +335,7 @@ class NodeLookup():
 
         # replacement with 1 or 2 variable stats
         if len(trimmed_data) == 2 or len(trimmed_data) == 3:
-            index = self.get_add_replace_index('Glorious Vanity', str(trimmed_data[0])) - MAGIC_NUMBER
+            index = self.get_add_replace_index('Glorious Vanity', trimmed_data[0]) - MAGIC_NUMBER
             replacement_node = copy.deepcopy(self.replacements[index])
             new_stats = {}
             for x in range(len(trimmed_data) - 1):
@@ -374,23 +374,8 @@ class NodeLookup():
 
         # 3 or 4 small nodes in a trenchcoat
         elif len(trimmed_data) == 6 or len(trimmed_data) == 8:
-            # Legacy of the Vaal and Might of the Vaal are the only outcomes
-            # Legacy is defensive nodes, Might is offense
-            # we have to look at the icon filename to determine which we're dealing with
-
-            # the additions object does NOT have any indication of which it is (offense/defense)
-            # but it has the same 'id' string as the corresponding replacement node
-            index = self.get_add_replace_index('Glorious Vanity', int(trimmed_data[0]))
-            additions_id_str = self.additions[index]['id']
-            icon_name = list(filter(lambda n: n['id'] == additions_id_str, self.replacements))[0]['icon']
-            is_offense = 'Offensive' in icon_name
-            if is_offense:
-                name = 'Might of the Vaal'
-            else:
-                name = 'Legacy of the Vaal'
-            
             replacement_node = {
-                'dn': name,
+                'dn': self.get_gv_node_name(trimmed_data),
                 'sd': [],
                 'stats': {}
             }
@@ -432,3 +417,16 @@ class NodeLookup():
 
         else:
             raise Exception(f'Invalid data block for node {node.node_id}: {trimmed_data}')
+
+
+    def get_gv_node_name(self, trimmed_data: List[int]) -> str:
+        """
+        The 'assembled' nodes for GV can either be Might of the Vaal or Legacy of the Vaal
+
+        The addition effects have icons (fist or palm) that they display when they are applied to small nodes
+        The name of the assembled node is determined by the last addition that will be applied
+        """
+        last_addition_idx = trimmed_data[int((len(trimmed_data) / 2)) - 1]
+        additions_id_str = self.additions[last_addition_idx]['id']
+        icon_name = list(filter(lambda n: n['id'] == additions_id_str, self.replacements))[0]['icon']
+        return 'Might of the Vaal' if 'Offensive' in icon_name else 'Legacy of the Vaal'

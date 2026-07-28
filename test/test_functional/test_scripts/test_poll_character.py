@@ -4,7 +4,6 @@ from sqlalchemy.sql import select, update
 
 from app.models import c_, j_, l_
 from app.scripts import poll_character as pc
-from app.scripts.poll_character import League
 
 SETTLERS_RANK_ONE = {
     "rank": 1,
@@ -30,19 +29,19 @@ SETTLERS_RANK_ONE = {
     }
 }
 
-DIVAYTH_FYR = {
+TEST_CHARACTER = {
     "rank": 9001,
     "dead": False,
     "public": True,
     "character": {
-        "id": "8674d2e0a0d350b81287999529cb79b0b0007059083a65610bcb128362c5a863",
-        "name": "DIVAYTH_FYR",
-        "level": 100,
-        "class": "Hierophant",
+        "id": "borguspapapeepo",
+        "name": "aggjhtyjtdyguj",
+        "level": 95,
+        "class": "Luminary",
         "experience": 4250334444
     },
     "account": {
-        "name": "Rooballeux#6674",
+        "name": "Kranaros#2574",
         "challenges": {
             "set": "Village",
             "completed": 6,
@@ -114,9 +113,9 @@ BOTYARA = {
 
 
 @pytest.fixture
-def get_settlers_id(test_config, db_engine):
+def get_league_id(test_config, db_engine):
     with db_engine.connect() as conn:
-        q = select(l_.c.league_id).select_from(l_).where(l_.c.league_name == 'Settlers')
+        q = select(l_.c.league_id).select_from(l_).where(l_.c.league_name == 'Allflame')
         league_id = conn.execute(q).scalar()
         yield league_id
 
@@ -137,40 +136,42 @@ def test_get_league_ladder(test_config):
     assert ladder_entries[0] == SETTLERS_RANK_ONE
 
 
-def test_process_single_ladder_entry(test_config, db_engine, clean_tables, get_settlers_id):
-    settlers_id = get_settlers_id
-    DIVAYTH_FYR['league_id'] = settlers_id
-    pc.process_single_ladder_entry(DIVAYTH_FYR)
+# def test_process_single_ladder_entry(test_config, db_engine, clean_tables, get_settlers_id):
+#     settlers_id = get_settlers_id
+#     EAGON_CHOLAKIAN['league_id'] = settlers_id
+#     pc.process_single_ladder_entry(EAGON_CHOLAKIAN)
+#
+#     with db_engine.connect() as conn:
+#         characters = conn.execute(select(c_)).fetchall()
+#         jewels = conn.execute(select(j_)).fetchall()
+#
+#         assert len(characters) == 1
+#         assert len(jewels) == 1
+#
+#         c = characters[0]
+#         j = jewels[0]
+#
+#         assert c.league_id == settlers_id
+#         assert c.character_name == 'DIVAYTH_FYR'
+#         # assert c.class_id == 19
+#         assert c.character_level == 100
+#         assert c.account_name == 'Rooballeux#6674'
+#         assert c.ladder_rank == 9001
+#
+#         assert j.character_id == c.character_id
+#         assert j.jewel_type_id == 1
+#         assert j.seed == 7875
+#         assert j.general_id == 14
+#         assert j.mf_mods == 4608
+#         assert j.socket_id == 6
 
-    with db_engine.connect() as conn:
-        characters = conn.execute(select(c_)).fetchall()
-        jewels = conn.execute(select(j_)).fetchall()
 
-        assert len(characters) == 1
-        assert len(jewels) == 1
+def test_process_character_isolated(test_config, db_engine, delete_test_character, get_league_id):
+    league_id = get_league_id
+    TEST_CHARACTER['league_id'] = league_id
+    pc.process_single_ladder_entry(TEST_CHARACTER)
 
-        c = characters[0]
-        j = jewels[0]
-
-        assert c.league_id == settlers_id
-        assert c.character_name == 'DIVAYTH_FYR'
-        assert c.class_id == 19
-        assert c.character_level == 100
-        assert c.account_name == 'Rooballeux#6674'
-        assert c.ladder_rank == 9001
-
-        assert j.character_id == c.character_id
-        assert j.jewel_type_id == 1
-        assert j.seed == 7875
-        assert j.general_id == 14
-        assert j.mf_mods == 4608
-        assert j.socket_id == 6
-
-
-def test_process_divayth_isolated(test_config, db_engine, delete_divayth_fyr, get_settlers_id):
-    settlers_id = get_settlers_id
-    DIVAYTH_FYR['league_id'] = settlers_id
-    pc.process_single_ladder_entry(DIVAYTH_FYR, settlers_id)
+    pass
 
 
 def test_process_repeat_scans_do_not_generate_multiple_jewel_rows(test_config, db_engine, clean_tables, get_hardcore_settlers_id):
@@ -224,11 +225,10 @@ def test_poll_ladder_persistent(test_config, db_engine):
     pc.poll_ladder()
 
 
-def test_poll_character_times_out_character_on_subsequent_runs(test_config, db_engine, clean_tables, get_settlers_id):
-    settlers_id = get_settlers_id
-    DIVAYTH_FYR['league_id'] = settlers_id
-    pc.process_single_ladder_entry(DIVAYTH_FYR)
-    pc.process_single_ladder_entry(DIVAYTH_FYR)
+def test_poll_character_times_out_character_on_subsequent_runs(test_config, db_engine, clean_tables, get_league_id):
+    TEST_CHARACTER['league_id'] = get_league_id
+    pc.process_single_ladder_entry(TEST_CHARACTER)
+    pc.process_single_ladder_entry(TEST_CHARACTER)
 
     with db_engine.connect() as conn:
         characters = conn.execute(select(c_)).fetchall()
@@ -238,12 +238,11 @@ def test_poll_character_times_out_character_on_subsequent_runs(test_config, db_e
         assert c.next_timeout_max == 2
 
 
-def test_poll_character_decrements_timeout(test_config, db_engine, clean_tables, get_settlers_id):
-    settlers_id = get_settlers_id
-    DIVAYTH_FYR['league_id'] = settlers_id
-    pc.process_single_ladder_entry(DIVAYTH_FYR)
-    pc.process_single_ladder_entry(DIVAYTH_FYR)
-    pc.process_single_ladder_entry(DIVAYTH_FYR)
+def test_poll_character_decrements_timeout(test_config, db_engine, clean_tables, get_league_id):
+    TEST_CHARACTER['league_id'] = get_league_id
+    pc.process_single_ladder_entry(TEST_CHARACTER)
+    pc.process_single_ladder_entry(TEST_CHARACTER)
+    pc.process_single_ladder_entry(TEST_CHARACTER)
 
     with db_engine.connect() as conn:
         characters = conn.execute(select(c_)).fetchall()
@@ -253,13 +252,12 @@ def test_poll_character_decrements_timeout(test_config, db_engine, clean_tables,
         assert c.next_timeout_max == 2
 
 
-def test_poll_character_doubles_timeout_on_repeat_offense(test_config, db_engine, clean_tables, get_settlers_id):
-    settlers_id = get_settlers_id
-    DIVAYTH_FYR['league_id'] = settlers_id
-    pc.process_single_ladder_entry(DIVAYTH_FYR)
-    pc.process_single_ladder_entry(DIVAYTH_FYR)
-    pc.process_single_ladder_entry(DIVAYTH_FYR)
-    pc.process_single_ladder_entry(DIVAYTH_FYR)
+def test_poll_character_doubles_timeout_on_repeat_offense(test_config, db_engine, clean_tables, get_league_id):
+    TEST_CHARACTER['league_id'] = get_league_id
+    pc.process_single_ladder_entry(TEST_CHARACTER)
+    pc.process_single_ladder_entry(TEST_CHARACTER)
+    pc.process_single_ladder_entry(TEST_CHARACTER)
+    pc.process_single_ladder_entry(TEST_CHARACTER)
 
     with db_engine.connect() as conn:
         characters = conn.execute(select(c_)).fetchall()

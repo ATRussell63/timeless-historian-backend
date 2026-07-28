@@ -187,7 +187,7 @@ def db_jewel_matches_equipped(db_jewel: Jewel, equipped_jewel: ParsedJewel) -> b
 
 def get_equipped_timeless_jewel(response_body: dict) -> Optional[ParsedJewel]:
     for item in response_body['items']:
-        if item['typeLine'] == 'Timeless Jewel':
+        if item['typeLine'] == 'Timeless Jewel' and item['name'] in LD_CACHE.jewel_type_ids.keys():
             jewel = parse_jewel_json_object(item, LD_CACHE)
             # unfortunately socket is not included in the item obj so we need to do this search
             for jewel_socket in response_body['jewel_data']:

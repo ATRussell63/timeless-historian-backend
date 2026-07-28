@@ -6,11 +6,10 @@ from sqlalchemy.engine import Row
 import logging
 from app.db import get_engine
 from app.models import c_, l_, j_, jtl_, gl_, mml_, cl_, sl_, v_
-from sqlalchemy.sql import select, func, distinct, alias, table
-from sqlalchemy import text, cast, literal_column, and_, or_, Column, values, Integer, Numeric
-from sqlalchemy.dialects.postgresql import INTEGER, TEXT
-from sqlalchemy.sql.expression import lateral, true, null
-from sqlalchemy.orm import aliased
+from sqlalchemy.sql import select, func
+from sqlalchemy import cast, and_, Column, values, Integer, Numeric
+from sqlalchemy.dialects.postgresql import INTEGER
+from sqlalchemy.sql.expression import true
 from app.util.lut_cache import LutData
 
 logger = logging.getLogger('main')
@@ -97,8 +96,7 @@ def base_jewel_query():
     q = select(l_.c.league_name,
                l_.c.league_id,
                l_.c.hardcore,
-               (or_(l_.c.league_end.is_(None),
-                    func.now().between(l_.c.league_start, l_.c.league_end)).label('league_active')),
+               (func.now().between(l_.c.league_start, l_.c.league_end).label('league_active')),
                c_.c.character_name,
                c_.c.account_name,
                c_.c.ggg_id,
@@ -246,6 +244,7 @@ def perform_bulk_overview(bulk_search_data: List[BulkSearchRequest]):
         query = query_bulk_overview(bulk_search_data)
         results = conn.execute(query)
         return results
+
 
 def format_jewel_search_results(search_results: List[Row], search_data: Optional[SearchRequest] = None) -> dict:
     output = {}

@@ -1,6 +1,8 @@
 import re
 from dataclasses import dataclass
 from typing import Optional, List, Dict
+
+from app.scripts.classes import DrawingRoot
 from app.util.lut_cache import LutData
 
 
@@ -11,7 +13,7 @@ class ParsedJewel:
     general: str
     mf_mods: List[str]
     socket_id: Optional[int] = None
-    drawing: Optional[Dict] = None
+    drawing: Optional[DrawingRoot] = None
 
 
 def parse_jewel_raw_str(jewel_string: str, lut_data: LutData) -> ParsedJewel:
@@ -33,13 +35,13 @@ def parse_jewel_json_object(jewel_object: dict, lut_data: LutData) -> ParsedJewe
     general_map = lut_data.general_list
     jewel_type = jewel_object['name']
     assert jewel_type in jewel_type_map.keys()
-    seed = re.search(r'(\d+)', jewel_object['explicitMods'][0]).group(0)
-    general = re.search(r'(\w+)$', jewel_object['explicitMods'][0].split('\n')[0]).group(1)
+    seed = re.search(r'(\d+)', jewel_object['explicitMods'][0]['description']).group(0)
+    general = re.search(r'(\w+)$', jewel_object['explicitMods'][0]['description'].split('\n')[0]).group(1)
     assert general in general_map.keys()
 
     mf_mods = []
     if jewel_type == 'Militant Faith':
-        mf_mods = [jewel_object['explicitMods'][1], jewel_object['explicitMods'][2]]
+        mf_mods = [jewel_object['explicitMods'][1]['description'], jewel_object['explicitMods'][2]['description']]
     
     return ParsedJewel(jewel_type,
                        seed,

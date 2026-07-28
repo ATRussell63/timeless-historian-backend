@@ -12,6 +12,11 @@ services:
       - .:/timeless:ro
       - ./data:/timeless/data:rw
       - ./config:/timeless/config:rw
+    logging:
+      driver: local
+      options:
+        max-size: "20m"
+        max-file: "5"
   
   db:
     image: postgres:16

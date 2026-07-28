@@ -29,16 +29,16 @@ def convert_lua_to_csv(lua_filepath: str, passive_tree_filepath: str, base_mappi
         line = lua_file.readline()
         while line and line != '':
             if 'localIdToGlobalId' in line:
-                parseReplacementMapping(line, repl_mapping)
+                parse_replacement_mapping(line, repl_mapping)
             else:
-                parseBaseNodeMapping(line, tree, base_mapping)
+                parse_base_node_mapping(line, tree, base_mapping)
 
             line = lua_file.readline()
         
         repl_file.write(json.dumps(repl_mapping))
 
 
-def parseBaseNodeMapping(line: str, tree, output_file) -> bool:
+def parse_base_node_mapping(line: str, tree, output_file):
     try:
         match = re.search(r'nodeIDList\[(\d+)\] = \{ index = (\d+), size = \d+ \}', line)
         nodeID = match.group(1)
@@ -52,7 +52,7 @@ def parseBaseNodeMapping(line: str, tree, output_file) -> bool:
         print({e})
 
 
-def parseReplacementMapping(line: str, repl_mapping: dict):
+def parse_replacement_mapping(line: str, repl_mapping: dict):
     try:
         match = re.search(r'GlobalId"\]\[(\d+)\]\[(\d+)\] = (\d+)', line)
         jewel_id = int(match.group(1))
@@ -69,6 +69,6 @@ def parseReplacementMapping(line: str, repl_mapping: dict):
         print(e)
 
 
-LIVE_PATCH = '3.28'
+LIVE_PATCH = '3.29'
 if __name__ == '__main__':
     convert_lua_to_csv(f'data/{LIVE_PATCH}/NodeIndexMapping.lua', f'data/{LIVE_PATCH}/data.json', f'data/{LIVE_PATCH}/node_indices.csv', f'data/{LIVE_PATCH}/mapping_indices.json')
