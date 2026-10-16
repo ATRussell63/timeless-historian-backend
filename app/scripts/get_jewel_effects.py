@@ -15,6 +15,11 @@ EH = 'Elegant Hubris'
 MF = 'Militant Faith'
 GV = 'Glorious Vanity'
 HT = 'Heroic Tragedy'
+FV = 'Festering Vengeance'
+EG = 'Extinguishing Grasp'
+BD = 'Baleful Dominion'
+DA = 'Destructive Aspiration'
+RM = 'Reclaimed Malevolence'
 
 MAGIC_NUMBER = 337
 
@@ -51,6 +56,31 @@ class NodeLookup:
             'minimum': 100,
             'maximum': 8000,
             'increment': 1
+        },
+        FV: {
+            'minimum': 100,
+            'maximum': 8000,
+            'increment': 1
+        },
+        EG: {
+            'minimum': 100,
+            'maximum': 8000,
+            'increment': 1
+        },
+        BD: {
+            'minimum': 100,
+            'maximum': 8000,
+            'increment': 1
+        },
+        DA: {
+            'minimum': 100,
+            'maximum': 8000,
+            'increment': 1
+        },
+        RM: {
+            'minimum': 100,
+            'maximum': 8000,
+            'increment': 1
         }
     }
 
@@ -72,7 +102,11 @@ class NodeLookup:
         'Maxarius': 'Transcendence',
         'Vorana': 'Black Scythe Training',
         'Uhtred': 'Celestial Mathematics',
-        'Medved': 'The Unbreaking Circle'
+        'Medved': 'The Unbreaking Circle',
+        'Tecrod': 'Festering Vengeance',
+        'Ulaman': 'Weighted Exchange',
+        'Kurgal': 'Reconstructed Essence',
+        'Amanamu': 'The Loyal Few'
     }
 
     BASIC_STAT_NODES = ['Strength', 'Dexterity', 'Intelligence']
@@ -266,7 +300,7 @@ class NodeLookup:
         return self.add_replace_map[jewel_type][str(offset)]
 
     def build_fast_gv_lookup_file(self):
-        """ The way the data is layed out makes it impossible to jump directly to the data we want.
+        """ The way the data is laid out makes it impossible to jump directly to the data we want.
             The data for each node can either be 2, 3, 6, or 8 bytes normally.
             By padding every node with 0s we can make everything uniform and obviate the header section
             for the purposes of lookups.

@@ -3,6 +3,7 @@ from dataclasses import dataclass
 from typing import Optional, List, Dict
 
 from app.scripts.classes import DrawingRoot
+from app.util.gggapi import APIJewel
 from app.util.lut_cache import LutData
 
 
@@ -30,23 +31,23 @@ def parse_jewel_raw_str(jewel_string: str, lut_data: LutData) -> ParsedJewel:
                        mf_mods)
 
 
-def parse_jewel_json_object(jewel_object: dict, lut_data: LutData) -> ParsedJewel:
+def parse_jewel_mods(jewel_object: APIJewel, lut_data: LutData) -> ParsedJewel:
     jewel_type_map = lut_data.jewel_type_ids
     general_map = lut_data.general_list
-    jewel_type = jewel_object['name']
-    assert jewel_type in jewel_type_map.keys()
-    seed = re.search(r'(\d+)', jewel_object['explicitMods'][0]['description']).group(0)
-    general = re.search(r'(\w+)$', jewel_object['explicitMods'][0]['description'].split('\n')[0]).group(1)
+    assert jewel_object.name in jewel_type_map.keys()
+    seed = re.search(r'(\d+)', jewel_object.explicitMods[0]['description']).group(0)
+    general = re.search(r'(\w+)$', jewel_object.explicitMods[0]['description'].split('\n')[0]).group(1)
     assert general in general_map.keys()
 
     mf_mods = []
-    if jewel_type == 'Militant Faith':
-        mf_mods = [jewel_object['explicitMods'][1]['description'], jewel_object['explicitMods'][2]['description']]
+    if jewel_object.name == 'Militant Faith':
+        mf_mods = [jewel_object.explicitMods[1]['description'], jewel_object.explicitMods[2]['description']]
     
-    return ParsedJewel(jewel_type,
-                       seed,
-                       general,
-                       mf_mods)
+    return ParsedJewel(jewel_type=jewel_object.name,
+                       seed=seed,
+                       general=general,
+                       mf_mods=mf_mods,
+                       socket_id=jewel_object.slotId)
 
 
 def parse_jewel_type(jewel_string: str, jewel_type_map: Dict[str, int]) -> str:

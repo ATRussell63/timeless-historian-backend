@@ -1,4 +1,7 @@
 import logging
+from dataclasses import dataclass
+from typing import List, Tuple
+
 import requests
 import time
 from math import ceil
@@ -10,8 +13,17 @@ from app.util.exceptions import PrivateAccountException
 
 logger = logging.getLogger('main')
 
+@dataclass
+class APIJewel:
+    name: str
+    typeLine: str
+    baseType: str
+    rarity: str
+    slotId: int
+    explicitMods: dict
 
-class RateLimiter():
+
+class RateLimiter:
 
     def __init__(self):
         pass
@@ -84,7 +96,7 @@ class Endpoint():
             logger.debug('Back to work!')
 
 
-class GGG_Api():
+class GGGApi:
 
     def __init__(self):
         self.ENDPOINTS = {
@@ -124,6 +136,17 @@ class GGG_Api():
             if '403' in str(e):
                 raise PrivateAccountException(str(e))
         return response
+
+    def parse_get_passives_response(self, api_response: dict) -> Tuple[List[int], List[APIJewel]]:
+        jewels = [APIJewel(name=item.get('name'),
+                           typeLine=item.get('typeLine'),
+                           baseType=item.get('baseType'),
+                           rarity=item.get('rarity'),
+                           slotId=item.get('x'),
+                           explicitMods=item.get('explicitMods'))
+                  for item in api_response.get('items')]
+
+        return api_response.get('hashes'), jewels
 
     def get_ladder_chunk(self, league_name: str, limit_max: int, offset_coeff: int) -> Response:
 
