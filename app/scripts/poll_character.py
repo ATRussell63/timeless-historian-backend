@@ -17,6 +17,7 @@ from app.util.exceptions import PrivateAccountException
 from app.util.lut_cache import LutData
 from app.scripts.jewel_radius_drawing import JewelDrawing
 from app.scripts.classes import Jewel
+from app.scripts.retrieve_abyss_data import retrieve_single_abyss
 
 logger = logging.getLogger('main')
 
@@ -463,6 +464,30 @@ def poll_ladder():
 
         try:
             process_single_ladder_entry(entry)
+            counter += 1
+        except Exception as e:
+            logger.error(f'Failed process_single_ladder_entry: {e}')
+
+def retrieve_abyss_data():
+
+    leagues = get_leagues()
+    league_ladders = []
+    for league in leagues:
+        ladder_entries = get_league_ladder(league.league_name)
+        ladder_entries = filter_ladder_entries(ladder_entries)
+        ladder_entries = apply_league_id_to_entries(ladder_entries, league.league_id)
+        league_ladders.append(ladder_entries)
+
+    merged_ladder = interleave(*league_ladders)
+
+    counter = 0
+    for entry in merged_ladder:
+        if counter >= get_config().MAX_PROCESSED_CHARACTERS:
+            logger.debug(f'Quota of {counter} characters has been processed, quitting...')
+            break
+
+        try:
+            retrieve_single_abyss(entry)
             counter += 1
         except Exception as e:
             logger.error(f'Failed process_single_ladder_entry: {e}')
