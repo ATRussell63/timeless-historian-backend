@@ -1,5 +1,5 @@
 from pytest import mark
-from app.util.ggg_api import RateLimiter
+from app.util.gggapi import RateLimiter
 
 
 @mark.parametrize('state_header,expected', [('1:60:0,1:1800:0,1:7200:0', 0),

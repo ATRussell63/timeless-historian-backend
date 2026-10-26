@@ -1,7 +1,7 @@
 import pytest
 import math
 from unittest.mock import Mock
-from app.scripts.jewel_radius_drawing import JewelDrawing, Vertex
+from app.scripts.drawing.jewel_radius_drawing import JewelDrawing, Vertex
 
 
 @pytest.mark.parametrize('a, b, maxOrbits, expected', [(0, 0, 400, 270),

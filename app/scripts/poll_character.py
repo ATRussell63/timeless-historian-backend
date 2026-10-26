@@ -1,5 +1,6 @@
 import dataclasses
 import logging
+import re
 from math import ceil
 from datetime import datetime
 from dataclasses import dataclass
@@ -11,23 +12,15 @@ from app.models import c_, l_, j_, jtl_, gl_
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.sql import select, update, func
 
-from app.util.parse_jewel import ParsedJewel, parse_jewel_json_object, mf_mod_int_to_strs, mf_mod_strs_to_int
-from app.util.ggg_api import GGG_Api
+from app.util.parse_jewel import ParsedJewel, parse_jewel_mods, mf_mod_int_to_strs, mf_mod_strs_to_int
+from app.util.gggapi import GGGApi, APIJewel
 from app.util.exceptions import PrivateAccountException
 from app.util.lut_cache import LutData
-from app.scripts.jewel_radius_drawing import JewelDrawing
+from app.scripts.drawing.jewel_radius_drawing import JewelDrawing, ZORATH_UNSUPPORTED_CLASSES
 from app.scripts.classes import Jewel
 
 logger = logging.getLogger('main')
-
-
-def get_jewel_socket(passive_skills_response: dict):
-    for jewel_socket in passive_skills_response['jewel_data']:
-        if passive_skills_response['jewel_data'][jewel_socket]['type'] == 'JewelTimeless':
-            return jewel_socket
-
-    raise Exception('No timeless jewel found in jewel_data!')
-
+LD_CACHE = LutData()
 
 @dataclass
 class League:
@@ -36,6 +29,18 @@ class League:
     hardcore: bool
     league_start: str
     league_end: str
+
+
+@dataclass
+class Character:
+    league_id: int
+    ggg_id: str
+    character_name: str
+    class_id: int
+    character_level: int
+    account_name: str
+    ladder_rank: int
+    delve_depth: int
 
 
 def get_leagues() -> List[League]:
@@ -51,36 +56,6 @@ def get_leagues() -> List[League]:
                    l_.c.league_end).where(l_.c.league_name.in_(get_config().LIVE_LEAGUES))
         leagues = conn.execute(q).fetchall()
         return leagues
-
-
-# deprecated, will probably be manually inserting new leagues
-# def add_league(league: League) -> int:
-#     """ Upsert the given league, only updating the end date if we have a new value. """
-#     with get_engine().connect() as conn:
-#         upsert = insert(l_).returning(l_.c.league_id).values(
-#             league_name=league.name,
-#             hardcore=league.hardcore,
-#             league_start=league.league_start,
-#             league_end=league.league_end
-#         )
-#         upsert = upsert.on_conflict_do_update(
-#             constraint='uk_league_name', set_={'league_end': league.league_end}
-#         )
-#         result = conn.execute(upsert).scalar()
-#         conn.commit()
-#         return result
-
-
-@dataclass
-class Character:
-    league_id: int
-    ggg_id: str
-    character_name: str
-    class_id: int
-    character_level: int
-    account_name: str
-    ladder_rank: int
-    delve_depth: int
 
 
 def add_character(character: Character) -> Tuple[int, bool]:
@@ -134,9 +109,6 @@ def reset_timeout_max(character_id: str):
         conn.commit()
 
 
-LD_CACHE = LutData()
-
-
 def get_character_jewel(character_id: int) -> Jewel:
     with get_engine().connect() as conn:
         results = conn.execute(select(j_.c.jewel_id,
@@ -185,31 +157,52 @@ def db_jewel_matches_equipped(db_jewel: Jewel, equipped_jewel: ParsedJewel) -> b
         # I can't compare the whole drawing because sub lists are unhashable to set
 
 
-def get_equipped_timeless_jewel(response_body: dict) -> Optional[ParsedJewel]:
-    for item in response_body['items']:
-        if item['typeLine'] == 'Timeless Jewel' and item['name'] in LD_CACHE.jewel_type_ids.keys():
-            jewel = parse_jewel_json_object(item, LD_CACHE)
-            # unfortunately socket is not included in the item obj so we need to do this search
-            for jewel_socket in response_body['jewel_data']:
-                if response_body['jewel_data'][jewel_socket]['type'] == 'JewelTimeless':
-                    jewel.socket_id = jewel_socket
-                    return jewel
+def get_equipped_timeless_jewel(equipped_jewels: List[APIJewel]) -> Optional[ParsedJewel]:
+    for jewel in equipped_jewels:
+        if jewel.typeLine.upper() == 'TIMELESS JEWEL' \
+            or jewel.name in LD_CACHE.abyss_domain_list \
+            or jewel.name == 'Reclaimed Malevolence':
+            return parse_jewel_mods(jewel, LD_CACHE)
+
     return None
 
+def get_flesh_and_flame_ascendancy_node(equipped_jewels: List[APIJewel]) -> Optional[str]:
+    """ Since Zorath exists now, we care about any 'anointed' ascendancy notables. """
+    flame_name = ""
+    flesh_name = ""
 
-def generate_jewel_drawing(jewel: ParsedJewel, response_body: dict, anointed_node_names: List[str]) -> ParsedJewel:
-    try:
-        jd = JewelDrawing()
-        jewel.drawing = jd.make_drawing(api_response=response_body,
-                                        jewel=jewel,
-                                        anointed_node_names=anointed_node_names)
-    except Exception as e:
-        logger.error(f'Error processing drawing for jewel: {e}')
-        jewel.drawing = {
-            'error': str(e)
-        }
-    
-    return jewel
+    pattern = r'Allocates (.*) if'
+
+    for jewel in equipped_jewels:
+        desc_line = jewel.explicitMods[0].get('description')
+
+        if jewel.name == 'Forbidden Flesh':
+            flesh_name = re.search(pattern, desc_line).group(1)
+        elif jewel.name == 'Forbidden Flame':
+            flame_name = re.search(pattern, desc_line).group(1)
+
+    if flesh_name == flame_name:
+        return flesh_name
+    else:
+        return None
+
+def generate_jewel_drawing(jewel: ParsedJewel, hashes: List[int], anointed_node_names: List[str],
+                           base_class: str, ascendancy: str, ff_ascend_node: str) -> JewelDrawing:
+    jd = JewelDrawing()
+
+    if jewel.jewel_type in LD_CACHE.abyss_domain_list:
+        jd.make_abyss_dominion_drawing()
+    if jewel.jewel_type is 'Reclaimed Malevolence':
+        jd.make_zorath_drawing(jewel=jewel,
+                               allocated_hashes=hashes,
+                               base_class=base_class,
+                               ascendancy_class=ascendancy,
+                               ff_ascend_node=ff_ascend_node)
+    else:
+        jd.make_timeless_drawing(jewel=jewel,
+                                 allocated_hashes=hashes,
+                                 anointed_node_names=anointed_node_names)
+    return jd
 
 
 def get_anointed_node_names(items_response_body: dict) -> List[str]:
@@ -255,7 +248,7 @@ def get_league_ladder(league_name: str) -> List[dict]:
     ladder_chunks = ceil(get_config().LADDER_MAX / limit_max)
     ladder_entries = []
 
-    api = GGG_Api()
+    api = GGGApi()
 
     for x in range(ladder_chunks):
         try:
@@ -275,10 +268,11 @@ def process_single_ladder_entry(ladder_entry: dict):
 
     logger.debug(f'Processing entry for {character_name} - {account_name} - {ggg_id}...')
 
+    ascendancy_name = ladder_entry['character']['class']
     character = Character(ladder_entry['league_id'],
                           ladder_entry['character']['id'],
                           ladder_entry['character']['name'],
-                          LD_CACHE.class_ids[ladder_entry['character']['class']],
+                          LD_CACHE.class_ids[ascendancy_name],
                           ladder_entry['character']['level'],
                           ladder_entry['account']['name'],
                           ladder_entry['rank'],
@@ -293,35 +287,59 @@ def process_single_ladder_entry(ladder_entry: dict):
         logger.debug(f'Finished processing {character_name} - {account_name} - {ggg_id}')
         return
 
-    jewel = None
-    anointed_nodes = []
     try:
-        api = GGG_Api()
+        api = GGGApi()
         response = api.get_passive_skills(account_name, character_name)
         response_body = response.json()
-        jewel = get_equipped_timeless_jewel(response_body)
 
-        # website passive tree viewer doesn't include anointed nodes
-        if jewel:
-            items_response = api.get_equipped_items(account_name, character_name)
-            anointed_nodes = get_anointed_node_names(items_response.json())
-
+        if not response_body:
+            logger.error("Error retrieving character info, response is empty")
+            logger.debug(f'Finished processing {character_name} - {account_name} - {ggg_id}')
+            return
     except PrivateAccountException:
         logger.error(f'This account was identified as private. \
                        Account Name: {account_name} - Character: {character_name}')
         logger.debug(f'Finished processing {character_name} - {account_name} - {ggg_id}')
         return
 
-    if jewel:
-        jewel = generate_jewel_drawing(jewel, response_body, anointed_nodes)
-    else:
+    hashes, equipped_jewels = api.parse_get_passives_response(api_response=response_body)
+    jewel = get_equipped_timeless_jewel(equipped_jewels)
+
+    if jewel and jewel.jewel_type is 'Reclaimed Malevolence' \
+        and ascendancy_name.upper() in ZORATH_UNSUPPORTED_CLASSES:
+        logger.debug(f'This character has a Zorath jewel equipped on an ascendancy where it does not grant a keystone. \
+                     Account Name: {account_name} - Character: {character_name}')
+        logger.debug('Sending them to prison and may god have mercy on their soul')
+        send_character_to_timeout(character_id)
+        return
+
+    ff_ascend_node = get_flesh_and_flame_ascendancy_node(equipped_jewels)
+
+    if not jewel:
         logger.debug(f'Character {character_name} was not wearing a timeless jewel, sending them to time out.')
         send_character_to_timeout(character_id)
         logger.debug(f'Finished processing {character_name} - {account_name} - {ggg_id}')
         return
 
-    # convert jewel to dict
-    jewel.drawing = dataclasses.asdict(jewel.drawing)
+    # get the names of the anointed passives (not included in the normal hash list)
+    try:
+        items_response = api.get_equipped_items(account_name, character_name)
+        anointed_nodes = get_anointed_node_names(items_response.json())
+    except Exception as e:
+        logger.error(f"Failed to retrieve equipped items (to parse anoints): {e}")
+        logger.debug(f'Finished processing {character_name} - {account_name} - {ggg_id}')
+        return
+
+    try:
+        base_class_name = LD_CACHE.base_classes[ascendancy_name]
+        jewel_drawing = generate_jewel_drawing(jewel, response_body, anointed_nodes,
+                                               base_class_name, ascendancy_name, ff_ascend_node)
+        jewel.drawing = dataclasses.asdict(jewel_drawing)
+    except Exception as e:
+        logger.error(f'Error processing drawing for jewel: {e}')
+        jewel.drawing = {
+            'error': str(e)
+        }
 
     def cull_nodes(drawing):
         for node in drawing['nodes'].values():

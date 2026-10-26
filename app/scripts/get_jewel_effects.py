@@ -258,7 +258,8 @@ class NodeLookup:
         else:
             raise ValueError(f'Not a valid jewel type: {jewel_type}')
 
-    def lookup_notable_non_gv(self, jewel_type: str, jewel_seed: int, notable: Node) -> Tuple[Dict, bool]:
+    def lookup_notable_non_gv(self, jewel_type: str, jewel_seed: int, notable: Node) \
+            -> Tuple[str, List[str], dict, bool]:
         """ Determines what will happen to the given notable based on the jewel details.
             Returns the data from LegionPassives.json associated with the change and whether the notable has been replaced.
             If False, the data indicates stats that are added to the notable.
@@ -284,10 +285,14 @@ class NodeLookup:
 
         if (int(index) - MAGIC_NUMBER) < 0:
             # additions
-            return self.additions[index], False
+            effect = self.additions[index]
+            replacement = False
         else:
             # replacements
-            return self.replacements[index - MAGIC_NUMBER], True
+            effect = self.replacements[index - MAGIC_NUMBER]
+            replacement = True
+
+        return effect['dn'], effect['sd'], effect['stats'], replacement
 
     def get_add_replace_index(self, jewel_type: str, offset: int) -> int:
         """ *Mirage League* The mapping is a little different now. Rather than directly indexing 

@@ -106,7 +106,7 @@ def test_parse_jewel_json_object():
         "y": 0,
         "inventoryId": "PassiveJewels"
     }
-    actual = pj.parse_jewel_json_object(jewel_obj, ld)
+    actual = pj.parse_jewel_mods(jewel_obj, ld)
     assert expected == actual
 
 

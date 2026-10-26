@@ -1,5 +1,4 @@
 import math
-import json
 import re
 from typing import List, Dict, Tuple
 from collections import defaultdict, deque
@@ -8,91 +7,102 @@ from numpy import inf
 import copy
 import logging
 import app.scripts.get_jewel_effects as je
-from app.scripts.classes import Vertex, NodeTooltip, Node, DrawingRoot, StraightEdge, CurvedEdge, Jewel
+from app.scripts.classes import DrawingRoot, StraightEdge, CurvedEdge, Jewel, Vertex
+from app.scripts.parse_tree_json.classes import Node
+from app.scripts.parse_tree_json.constants import TreeConstants
+from app.scripts.parse_tree_json.nodes import TreeNodes
 from app.util.parse_jewel import ParsedJewel
-from app.app_config import get_data_path
 
 RELEVANT_NODE_TYPES = ['keystone', 'notable', 'small_passive', 'jewel_socket']
+
+ZORATH_UNSUPPORTED_CLASSES = ['ASCENDANT', 'RELIQUARIAN']
+
+CLASS_START_NODE_ALIASES = {
+    "SHADOW": "SIX",
+    "SCION": "SEVEN"
+}
 
 logger = logging.getLogger('main')
 
 
-class JewelDrawing():
+def node_is_in_jewel_radius(n: Vertex, j: Vertex, radius):
+    xComponent = (n.x - j.x) ** 2
+    yComponent = (n.y - j.y) ** 2
+    return math.sqrt(xComponent + yComponent) <= radius
+
+
+class JewelDrawing:
     """
     Encompasses everything required to generate a json definition of how to draw the nodes and edges
     of a particular jewel socket for a particular character.
     """
 
     def __init__(self):
-        self._TREE_DATA = None
+        self._nodes = TreeNodes()
+        self._constants = TreeConstants()
+
+        # self._TREE_DATA = None
         # TODO - marauder bottom starting node and quickstep have caused problems before
         #        I don't have an intelligent reason for this value, it's a manual tuning issue
         self.TIMELESS_JEWEL_RADIUS = 1800
 
     @property
-    def tree_data(self):
-        # TODO - I think I want to save the tree data in the db later on
-        if not self._TREE_DATA:
-            with open(get_data_path() + 'data.json', 'r') as tree_file:
-                self._TREE_DATA = json.load(tree_file)
+    def nodes(self):
+        return self._nodes
 
-        return self._TREE_DATA
+    def make_timeless_drawing(self, jewel: ParsedJewel, allocated_hashes:List[int], anointed_node_names: List[str]) -> DrawingRoot:
+        """ We need the api response for the list of allocated nodes and the jewel api id
+            (since we're not saving that one in the db).
 
-    def node_type(self, node_obj) -> str:
-        if not node_obj.get('group'):
-            return 'cluster_passive'
-        elif 'classStartIndex' in node_obj.keys():
-            return 'class_start'
-        elif node_obj.get('ascendancyName') is not None:
-            return 'ascendancy'
-        # root node
-        elif node_obj['group'] == 0:
-            return 'root'
-        elif node_obj.get('isBlighted'):
-            return 'blight'
-        elif node_obj.get('isMastery'):
-            return 'mastery'
-        elif node_obj.get('isKeystone'):
-            return 'keystone'
-        elif node_obj.get('isNotable'):
-            return 'notable'
-        elif node_obj.get('isJewelSocket'):
-            return 'jewel_socket'
-        else:
-            return 'small_passive'
+            Returns the full json that the frontend will need to draw a cutout of the passive tree.
+        """
+        logger.debug(f'Begin drawing for jewel: {jewel.jewel_type} {jewel.seed} {jewel.general}')
 
-    def node_is_in_jewel_radius(self, n: Vertex, j: Vertex, radius):
-        xComponent = (n.x - j.x) ** 2
-        yComponent = (n.y - j.y) ** 2
-        return math.sqrt(xComponent + yComponent) <= radius
+        # find the nodeIds for the allocated nodes, add them to the list
+        anointed_hashes = self.lookup_hashes_from_node_names(anointed_node_names)
+        allocated_hashes.extend(anointed_hashes)
+        allocated_hashes = list(set(allocated_hashes))
 
-    def get_passive_coords(self, passive: int) -> Vertex:
-        group_idx = self.tree_data['nodes'][str(passive)]['group']
-        gX, gY = self.tree_data['groups'][str(group_idx)]['x'], self.tree_data['groups'][str(group_idx)]['y']
-        pOrbit = self.tree_data['nodes'][str(passive)]['orbit']
-        pOrbitIndex = self.tree_data['nodes'][str(passive)]['orbitIndex']
-        pOrbitRadius = self.tree_data['constants']['orbitRadii'][pOrbit]
-        skillsPerOrbit = self.tree_data['constants']['skillsPerOrbit'][pOrbit]
+        drawing = self.make_pre_transform_drawing(int(jewel.socket_id), allocated_hashes)
+        drawing, jewel_stats, allocated_keystone = self.apply_jewel_changes(drawing, jewel)
+        drawing.curved_edges = self.coalesce_curved_edges(drawing)
+        drawing.straight_edges = self.coalesce_straight_edges(drawing)
+        jewel_stat_list = self.jewel_stats_dict_to_list(jewel_stats)
+        drawing.jewel_stats = jewel_stat_list
+        drawing.jewel_type = jewel.jewel_type
+        drawing = self.truncate_values(drawing)
+        return drawing
 
-        # hardcoded angles from pob /src/Classes/PassiveTree.lua
-        if skillsPerOrbit == 16:
-            angles = [0, 30, 45, 60, 90, 120, 135, 150, 180, 210, 225, 240, 270, 300, 315, 330]
+    def make_abyss_dominion_drawing(self, jewel: ParsedJewel, allocated_hashes:List[int], anointed_node_names: List[str]) -> DrawingRoot:
+        pass
 
-        elif skillsPerOrbit == 40:
-            angles = [0, 10, 20, 30, 40, 45, 50, 60, 70, 80, 90, 100, 110, 120, 130, 135, 140, 
-                      150, 160, 170, 180, 190, 200, 210, 220, 225, 230, 240, 250, 260, 270, 280,
-                      290, 300, 310, 315, 320, 330, 340, 350]
-        else:
-            angles = [x * (360 / skillsPerOrbit) for x in range(skillsPerOrbit)]
+    def make_zorath_drawing(self, jewel: ParsedJewel, allocated_hashes:List[int], base_class: str,
+                            ascendancy_class: str, ff_ascend_node: str) -> DrawingRoot:
 
-        angle = angles[pOrbitIndex]
-        # rotate into our new cursed paradigm
-        angle = math.radians(angle - 90)
 
-        pX = (math.cos(angle) * pOrbitRadius) + gX
-        pY = (math.sin(angle) * pOrbitRadius) + gY
 
-        return Vertex(pX, pY)
+        # if flesh & flame are active, find the node object
+        if ff_ascend_node is not None:
+            ascend_node = list(filter(lambda n: n['name'] == ff_ascend_node, self.tree_data['nodes']))[0]
+            allocated_hashes.append(ascend_node['skill'])
+
+        # make drawing of the ascendancy
+        drawing = self.make_pre_transform_ascend_drawing()
+
+        # mutate the node that got replaced by Zorath
+
+        # do the tree crawl and get the nodeIds along the shortest path to class start
+
+
+        pass
+
+    # def get_passive_coords(self, node: Node) -> Vertex:
+    #     anchor = node.anchor
+    #
+    #     local_x = (math.cos(anchor.angle) * anchor.radius) + anchor.global_x
+    #     local_y = (math.sin(anchor.angle) * anchor.radius) + anchor.global_y
+    #
+    #     return Vertex(local_x, local_y)
 
     def make_node_objs(self, passive_types: List[str]) -> Dict[int, Node]:
 
@@ -107,42 +117,60 @@ class JewelDrawing():
 
         return output
 
-    def make_node(self, node: dict, group: dict, allocated: bool):
-        return Node(
-            name=node['name'],
-            node_id=int(node['skill']),
-            node_type=self.node_type(node),
-            allocated=allocated,
-            absolute_coords=self.get_passive_coords(node['skill']),
-            relative_coords=None,
-            mods=node.get('stats'),
-            reminder=node.get('reminderText'),
-            orbit=node['orbit'],
-            orbitRadius=self.tree_data['constants']['orbitRadii'][node['orbit']],
-            orbitIndex=node['orbitIndex'],
-            connected_nodes=node['out'] + node['in'],
-            group_id=node['group'],
-            group_absolute_coords=Vertex(group['x'],
-                                         group['y']),
-            group_relative_coords=None,
-            tooltip=None
-        )
+    def exclude_connected_class_start(self, node: Node, class_name: str) -> Node:
+        if class_name in CLASS_START_NODE_ALIASES:
+            class_name = CLASS_START_NODE_ALIASES.get(class_name.lower()).upper()
+
+        # get the actual id of the class start node
+        excluded_node = self.nodes.get_by_name(class_name)
+        return self.prune_connected_node(node, excluded_node.node_id)
+
+    @staticmethod
+    def prune_connected_node(node: Node, node_id: int) -> Node:
+        node.connected_nodes.path_in.remove(node_id)
+        node.connected_nodes.path_out.remove(node_id)
+        return node
+
+    # def make_node(self, node: TreeNode, allocated: bool, excluded_class_start: Optional[str] = None):
+    #     connected_node_set = set(node.connected_nodes.path_in + node.connected_nodes.path_out)
+    #     if excluded_class_start:
+    #         # find the class name alias (only shadow and scion are aliased)
+    #         if excluded_class_start in CLASS_START_NODE_ALIASES:
+    #             excluded_class_start = CLASS_START_NODE_ALIASES.get(excluded_class_start.lower()).upper()
+    #
+    #         # get the actual id of the class start node
+    #         excluded_node = self.nodes.get_by_name(excluded_class_start)
+    #         connected_node_set.remove(excluded_node.node_id)
+
+        # return Node(
+        #     name=node.name,
+        #     node_id=node.node_id,
+        #     node_types=node.tags,
+        #     allocated=allocated,
+        #     absolute_coords=self.get_passive_coords(node),
+        #     relative_coords=None,
+        #     mods=node.stats,
+        #     reminder=node.reminder_text,
+        #     anchor=node.anchor,
+        #     connected_nodes=list(connected_node_set),
+        #     tooltip=None
+        # )
 
     def make_jewel_objs(self) -> Dict[int, DrawingRoot]:
 
         output = {}
-        jewel_sockets = self.tree_data['jewelSlots']
-        nodes_json = self.tree_data['nodes']
+        jewel_sockets = self._constants.jewel_slots
 
-        for i, jewel in enumerate(jewel_sockets):
+        for i, jewel_id in enumerate(jewel_sockets):
             try:
-                name = nodes_json[str(jewel)]['name']
+                jewel_node = self.nodes.get(jewel_id)
+                name = jewel_node.name
                 if 'Medium' in name or 'Small' in name:
                     continue
 
-                absolute_coords = self.get_passive_coords(jewel)
-                output[jewel] = DrawingRoot(
-                    jewel_id=jewel,
+                absolute_coords = self.get_passive_coords(jewel_node)
+                output[jewel_id] = DrawingRoot(
+                    jewel_id=jewel_id,
                     api_idx=i,
                     jewel_type=None,
                     jewel_stats=None,
@@ -164,7 +192,7 @@ class JewelDrawing():
         output = {}
         for jewel in jewels.values():
             for node in nodes.values():
-                if not self.node_is_in_jewel_radius(node.absolute_coords,
+                if not node_is_in_jewel_radius(node.absolute_coords,
                                                     jewel.jewel_coords,
                                                     self.TIMELESS_JEWEL_RADIUS):
                     continue
@@ -200,14 +228,6 @@ class JewelDrawing():
         return min(abs(a - b),
                    abs(a - (b + m)),
                    abs((a + m) - b))
-
-    # def calc_arc_len(self, a: Node, b: Node, r: float, maxOrbits: int) -> float:
-    #     i_dist = self.index_dist(a.orbitIndex, b.orbitIndex, maxOrbits)
-    #     angle = 360 * (i_dist / maxOrbits)
-    #     # print(f'Angle between nodes {a.name} and {b.name} is {angle} degrees')
-    #     arc_len = math.radians(angle) * r
-    #     # print(f'Orbit radius between nodes {a.name} and {b.name} is {r}')
-    #     return arc_len
 
     def calc_angle(self, a: Node, b: Node, r: float, maxOrbits: int) -> float:
         i_dist = self.index_dist(a.orbitIndex, b.orbitIndex, maxOrbits)
@@ -314,11 +334,7 @@ class JewelDrawing():
         
         return hash_list
 
-    def make_pre_transform_drawing(self, api_jewel_id: int, allocated_hashes: List[int], anointed_node_names: List[str]) -> dict:
-        # convert anointed notables into indices, add to hashes list
-        anointed_hashes = self.lookup_hashes_from_node_names(anointed_node_names)
-        allocated_hashes.extend(anointed_hashes)
-        allocated_hashes = list(set(allocated_hashes))
+    def make_pre_transform_drawing(self, api_jewel_id: int, allocated_hashes: List[int]) -> dict:
 
         j_map = self.build_jewel_to_nodes_in_radius_map()
 
@@ -406,6 +422,62 @@ class JewelDrawing():
 
         return jewel_obj
 
+    def make_pre_transform_ascend_drawing(self, allocated_hashes: List[int], base_class: str, ascendancy_class: str):
+        """
+        Makes a drawing of the primary ascendancy for this class.
+
+        Each base class has a dummy 'starting node' that connects the ascendancy tree to the rest of the actual passive tree.
+        That dummy node also connects to the 'start nodes' of the base class.
+
+        Normally we'd crawl this tree, but since Forbidden Flesh and Flame can allocate these nodes, and the tree is rather small,
+        it's probably fine to just filter for nodes that have a matching ascendancyName.
+        """
+
+        ascend_nodes = [node for node in self.nodes.values()
+                        if node.get('ascendancyName', '') == ascendancy_class]
+
+        # find the 'root node' of the ascendancy - this node has no stats and shouldn't have a tooltip
+        # but it does need to be rendered (probably as a small node)
+        ascend_root_node = list(filter(lambda n: n.get('isAscendancyStart', False) is True,
+                                  ascend_nodes))[0]
+
+        # fortunately all ascendancy nodes are part of their own group
+        ascend_group = self.groups[str(ascend_root_node['group'])]
+
+        # make the friggin drawing
+        nodes = []
+        for node in ascend_nodes:
+            nodes.append(self.make_node(node=node, group=ascend_group, allocated=node['skill'] in allocated_hashes))
+
+        # remove the class start node
+        self.make_node(node=ascend_root_node, group=ascend_group, allocated=False, excluded_class_start=base_class)
+
+        # now make the edges (MUCH simpler since we're trapped in this group)
+        straight_edges = []
+        curved_edges = []
+
+        def traverse(start_node_id: int, flow_direction: str, is_root: bool):
+            start_node = self.nodes[str(start_node_id)]
+
+            start_is_allocated = is_root or start_node_id in allocated_hashes
+            start_orbit = start_node['orbit']
+
+            for end_node_id in start_node[flow_direction]:
+                end_node = self.get_node_by_id(end_node_id)
+                end_orbit = end_node['orbit']
+
+                if start_orbit == end_orbit:
+                    self.make_curved_edge(start_node, end_node,
+                                          self.tree_data['constants']['skillsPerOrbit'][start_node.orbit])
+                else:
+                    self.make_straight_edge()
+
+                traverse(node, flow_direction)
+
+        # all ascendancies except Reliquarian go 'out' from class node
+        traverse(ascend_root_node['skill'], 'out', True)
+
+
     def make_tooltip(self, node: Node, change_data: dict, replaced: bool) -> NodeTooltip:
         if replaced:
             return NodeTooltip(
@@ -449,6 +521,8 @@ class JewelDrawing():
             body=body,
             replaced_title=None
         )
+
+    def get_stat_from_effect_dict(self, effect: dict):
 
     def add_effect_to_jewel_stats(self, jewel_stats: dict, effect: dict) -> dict:
         """The effect of a jewel will either be to add or replace stats.
@@ -556,38 +630,72 @@ class JewelDrawing():
         
         return jewel_stats
 
-    def apply_jewel_changes(self, jewel_drawing: DrawingRoot, timeless_jewel: ParsedJewel) -> Tuple[DrawingRoot, Dict]:
+    def build_keystone_details(self, keystone_node: dict, replaced_node: dict) -> dict:
+        """
+        Now that there are keystones that will be invisible to the jewel drawing, it's especially nice to provide
+        some info about the allocated keystone so the frontend can display it.
+
+        'keystone': {
+            'name': 'From Below',
+            'description': [
+                'Insufficient Mana doesn't prevent your Spells',
+                'Cannot recover Mana'
+            ],
+            'replaced': 'Void Beacon'
+        }
+        """
+
+        return {
+            'name': keystone_node['dn'],
+            'description': keystone_node['sd'],
+            'replaced': replaced_node['name']
+        }
+    
+
+    def apply_jewel_changes(self, jewel_drawing: DrawingRoot, timeless_jewel: ParsedJewel) -> Tuple[DrawingRoot, Dict, Dict]:
         """ Determines the changes that will apply to all nodes in the jewel, and applies them (as tooltips). """
 
         jewel_stats = {}
         converter = je.NodeLookup()
         # first, the layups (keystone / small nodes)
-        keystone = converter.lookup_jewel_keystone(timeless_jewel.general)
+        if timeless_jewel.general != 'Zorath':
+            keystone = converter.lookup_jewel_keystone(timeless_jewel.general)
+        else:
+            # TODO
+            keystone = None
+
+        allocated_keystone = None
 
         for k, node in jewel_drawing.nodes.items():
             # logger.debug(f'Processing {node.name}, {node.node_id}')
-            if node.node_type == 'jewel_socket':
+            if node.has_tag('jewel_socket'):
                 if node.node_id == jewel_drawing.jewel_id:
                     # timeless jewel socket
                     node.tooltip = self.make_timeless_jewel_tooltip(timeless_jewel)
                 else:
                     # socket in radius
                     node.tooltip = self.make_tooltip(node, {'sd': []}, False)
-            elif node.node_type == 'keystone':
+            elif node.has_tag('keystone'):
                 node.tooltip = self.make_tooltip(node, keystone, True)
 
-            elif node.node_type == 'small_passive' and timeless_jewel.jewel_type != 'Glorious Vanity':
+                if node.allocated and allocated_keystone is None and timeless_jewel.general != 'Zorath':
+                    allocated_keystone = self.build_keystone_details(keystone, node)
+
+
+            elif node.has_tag('small_passive') and timeless_jewel.jewel_type != 'Glorious Vanity':
                 effect, replaced = converter.lookup_small_node(timeless_jewel.jewel_type, node)
                 node.tooltip = self.make_tooltip(node, effect, replaced)
 
                 if node.allocated:
                     jewel_stats = self.add_effect_to_jewel_stats(jewel_stats, effect)
 
-            elif node.node_type == 'notable' and timeless_jewel.jewel_type != 'Glorious Vanity':
-                effect, replaced = converter.lookup_notable_non_gv(timeless_jewel.jewel_type,
+            elif node.has_tag('notable') and timeless_jewel.jewel_type != 'Glorious Vanity':
+                effect = converter.lookup_notable_non_gv(timeless_jewel.jewel_type,
                                                                    int(timeless_jewel.seed),
                                                                    node)
-                node.tooltip = self.make_tooltip(node, effect, replaced)
+                # TODO - I think we need to format the range placeholders here, or update the jewel stats in the same method
+
+                node.make_tooltip(*effect)
 
                 if node.allocated:
                     jewel_stats = self.add_effect_to_jewel_stats(jewel_stats, effect)
@@ -604,7 +712,7 @@ class JewelDrawing():
         if timeless_jewel.jewel_type == 'Militant Faith':
             jewel_stats = self.add_mf_mod_effect_to_jewel_stats(jewel_stats, timeless_jewel.mf_mods)
 
-        return jewel_drawing, jewel_stats
+        return jewel_drawing, jewel_stats, allocated_keystone
 
     def jewel_stats_dict_to_list(self, jewel_stats: dict) -> List[str]:
         """ Now that we have the stat totals we just need to apply them to the string template and order them.
@@ -809,24 +917,4 @@ class JewelDrawing():
             edge.radius = self.truncate_float(edge.radius, 2)
             edge.angle = self.truncate_float(edge.angle, 2)
 
-        return drawing
-
-    def make_drawing(self, api_response: dict, jewel: ParsedJewel, anointed_node_names: List[str]) -> DrawingRoot:
-        """ We need the api response for the list of allocated nodes and the jewel api id
-            (since we're not saving that one in the db).
- 
-            Returns the full json that the frontend will need to draw a cutout of the passive tree.
-        """
-        logger.debug(f'Begin drawing for jewel: {jewel.jewel_type} {jewel.seed} {jewel.general}')
-        
-        allocated_hashes = api_response['hashes']
-
-        drawing = self.make_pre_transform_drawing(int(jewel.socket_id), allocated_hashes, anointed_node_names)
-        drawing, jewel_stats = self.apply_jewel_changes(drawing, jewel)
-        drawing.curved_edges = self.coalesce_curved_edges(drawing)
-        drawing.straight_edges = self.coalesce_straight_edges(drawing)
-        jewel_stat_list = self.jewel_stats_dict_to_list(jewel_stats)
-        drawing.jewel_stats = jewel_stat_list
-        drawing.jewel_type = jewel.jewel_type
-        drawing = self.truncate_values(drawing)
         return drawing

@@ -1,6 +1,8 @@
 from dataclasses import dataclass
 from typing import Dict, List, Optional
 
+from app.scripts.parse_tree_json.classes import Node
+
 
 @dataclass(frozen=True)
 class Vertex:
@@ -23,33 +25,6 @@ class Vertex:
         else:
             return Vertex(x=other.x - self.x,
                           y=other.y - self.y)
-
-
-@dataclass
-class NodeTooltip:
-    title: str
-    body: List[str]
-    replaced_title: str
-
-
-@dataclass
-class Node:
-    name: str
-    node_id: int
-    node_type: str
-    allocated: bool
-    absolute_coords: Vertex
-    relative_coords: Optional[Vertex]
-    mods: Optional[List[str]]
-    reminder: Optional[List[str]]
-    orbit: int
-    orbitIndex: int
-    orbitRadius: int
-    connected_nodes: List[int]
-    group_id: int
-    group_absolute_coords: Vertex
-    group_relative_coords: Optional[Vertex]
-    tooltip: Optional[NodeTooltip]
 
 
 @dataclass

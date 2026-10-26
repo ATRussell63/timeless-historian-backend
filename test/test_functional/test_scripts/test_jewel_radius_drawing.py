@@ -7,7 +7,7 @@ from test.test_data.brother_yide_LP_13847 import LP_13847
 from test.test_data.icecrashele_EH_140320 import EH_13847
 from test.test_data.deranged_appraiser_BR_7393 import BR_7393
 from test.test_data.trk_sanctum_BR_1575 import BR_1575
-from app.scripts.jewel_radius_drawing import JewelDrawing
+from app.scripts.drawing.jewel_radius_drawing import JewelDrawing
 
 
 @pytest.fixture
@@ -46,7 +46,7 @@ def test_make_drawing_applies_replacement_tooltip_to_notables_MF(mock_jewel_diva
     )
 
     jd = JewelDrawing()
-    drawing = jd.make_drawing(api_response, jewel)
+    drawing = jd.make_timeless_drawing(api_response, jewel)
 
     actual = drawing.nodes[notable_id].tooltip
     assert actual.title == expected.title
@@ -69,7 +69,7 @@ def test_make_drawing_applies_addition_to_notables_MF(mock_jewel_divayth):
     )
 
     jd = JewelDrawing()
-    drawing = jd.make_drawing(api_response, jewel)
+    drawing = jd.make_timeless_drawing(api_response, jewel)
 
     actual = drawing.nodes[notable_id].tooltip
     assert actual.title == expected.title
@@ -90,7 +90,7 @@ def test_make_drawing_applies_replacement_to_keystones_MF(mock_jewel_divayth):
     )
 
     jd = JewelDrawing()
-    drawing = jd.make_drawing(api_response, jewel)
+    drawing = jd.make_timeless_drawing(api_response, jewel)
 
     actual = drawing.nodes[keystone_id].tooltip
     assert actual.title == expected.title
@@ -112,7 +112,7 @@ def test_make_drawing_applies_additions_to_small_passives_MF(mock_jewel_divayth)
     )
 
     jd = JewelDrawing()
-    drawing = jd.make_drawing(api_response, jewel)
+    drawing = jd.make_timeless_drawing(api_response, jewel)
 
     actual = drawing.nodes[node_id].tooltip
     assert actual.title == expected.title
@@ -132,7 +132,7 @@ def test_make_drawing_applies_replacement_to_small_passives_MF(mock_jewel_divayt
     )
 
     jd = JewelDrawing()
-    drawing = jd.make_drawing(api_response, jewel)
+    drawing = jd.make_timeless_drawing(api_response, jewel)
 
     actual = drawing.nodes[node_id].tooltip
     assert actual.title == expected.title
@@ -156,7 +156,7 @@ def test_make_drawing_includes_mf_stats_in_tooltip(mock_jewel_divayth):
     )
 
     jd = JewelDrawing()
-    drawing = jd.make_drawing(api_response, jewel)
+    drawing = jd.make_timeless_drawing(api_response, jewel)
 
     actual = drawing.nodes[node_id].tooltip
     assert actual.title == expected.title
@@ -176,7 +176,7 @@ def test_make_drawing_applies_basic_replacement_to_notables_GV(mock_jewel_yide):
     )
 
     jd = JewelDrawing()
-    drawing = jd.make_drawing(api_response, jewel)
+    drawing = jd.make_timeless_drawing(api_response, jewel)
 
     actual = drawing.nodes[node_id].tooltip
     assert actual.title == expected.title
@@ -198,7 +198,7 @@ def test_make_drawing_applies_root_jewel_tooltip_non_MF(mock_jewel_yide):
     )
 
     jd = JewelDrawing()
-    drawing = jd.make_drawing(api_response, jewel)
+    drawing = jd.make_timeless_drawing(api_response, jewel)
 
     actual = drawing.nodes[node_id].tooltip
     assert actual.title == expected.title
@@ -212,7 +212,7 @@ def test_make_drawing_applies_jewel_type(mock_jewel_yide):
     expected = 'Glorious Vanity'
 
     jd = JewelDrawing()
-    drawing = jd.make_drawing(api_response, jewel)
+    drawing = jd.make_timeless_drawing(api_response, jewel)
     assert drawing.jewel_type == expected
 
 
@@ -228,7 +228,7 @@ def test_make_drawing_applied_stat_total(mock_jewel_divayth):
     ])
 
     jd = JewelDrawing()
-    stats = jd.make_drawing(api_response, jewel).jewel_stats
+    stats = jd.make_timeless_drawing(api_response, jewel).jewel_stats
     assert set(stats) == expected
 
 
@@ -256,7 +256,7 @@ def test_make_drawing_applied_stat_total_GV():
     ])
     
     jd = JewelDrawing()
-    drawing = jd.make_drawing(api_response, jewel)
+    drawing = jd.make_timeless_drawing(api_response, jewel)
     assert set(drawing.jewel_stats) == expected
 
 
@@ -277,7 +277,7 @@ def test_make_drawing_applied_stat_total_LP():
     ])
 
     jd = JewelDrawing()
-    drawing = jd.make_drawing(api_response, jewel)
+    drawing = jd.make_timeless_drawing(api_response, jewel)
     assert set(drawing.jewel_stats) == expected
 
 
@@ -302,7 +302,7 @@ def test_make_drawing_applied_stat_total_EH():
     ])
 
     jd = JewelDrawing()
-    drawing = jd.make_drawing(api_response, jewel)
+    drawing = jd.make_timeless_drawing(api_response, jewel)
     assert set(drawing.jewel_stats) == expected
 
 
@@ -328,7 +328,7 @@ def test_make_drawing_applied_stat_total_BR():
     ])
 
     jd = JewelDrawing()
-    drawing = jd.make_drawing(api_response, jewel)
+    drawing = jd.make_timeless_drawing(api_response, jewel)
     assert set(drawing.jewel_stats) == expected
 
 
@@ -343,5 +343,5 @@ def test_make_drawing_BR_1575():
     )
 
     jd = JewelDrawing()
-    drawing = jd.make_drawing(api_response, jewel)
+    drawing = jd.make_timeless_drawing(api_response, jewel)
     assert drawing
