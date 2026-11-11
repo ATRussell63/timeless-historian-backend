@@ -67,7 +67,7 @@ def query_get_joats():
         select(
             func.count(func.distinct(c_.c.ggg_id)).label("total"),
             j_.c.seed,
-            j_.c.socket_id,
+            j_.c.socket_index,
             sl_.c.node_id,
             sl_.c.pob_name,
             sl_.c.description,
@@ -86,13 +86,13 @@ def query_get_joats():
             .join(jtl_, j_.c.jewel_type_id == jtl_.c.jewel_type_id)
             .join(c_, j_.c.character_id == c_.c.character_id)
             .join(l_, c_.c.league_id == l_.c.league_id)
-            .join(sl_, sl_.c.socket_id == j_.c.socket_id)
+            .join(sl_, sl_.c.socket_index == j_.c.socket_index)
         )
         .group_by(
             func.grouping_sets(
                 tuple_(
                     j_.c.seed,
-                    j_.c.socket_id,
+                    j_.c.socket_index,
                     sl_.c.node_id,
                     sl_.c.pob_name,
                     sl_.c.description,
@@ -102,8 +102,8 @@ def query_get_joats():
                 ),
                 tuple_(
                     j_.c.seed,
-                    j_.c.socket_id,
-                    j_.c.socket_id,
+                    j_.c.socket_index,
+                    j_.c.socket_index,
                     sl_.c.node_id,
                     sl_.c.pob_name,
                     sl_.c.description,
@@ -133,7 +133,7 @@ def query_get_joats():
             ranked.c.rn.label('rank'),
             ranked.c.total,
             ranked.c.seed,
-            ranked.c.socket_id,
+            ranked.c.socket_index,
             ranked.c.node_id,
             ranked.c.pob_name.label("socket_name"),
             ranked.c.description.label("socket_description"),

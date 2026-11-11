@@ -13,7 +13,7 @@ class ParsedJewel:
     seed: str
     general: str
     mf_mods: List[str]
-    socket_id: Optional[int] = None
+    socket_index: Optional[int] = None
     drawing: Optional[DrawingRoot] = None
 
 
@@ -21,14 +21,14 @@ def parse_jewel_raw_str(jewel_string: str, lut_data: LutData) -> ParsedJewel:
     jewel_type = parse_jewel_type(jewel_string, lut_data.jewel_type_ids)
     seed = parse_seed(jewel_string)
     general = parse_general(jewel_string, lut_data.general_list)
-    mf_mods: None
+    mf_mods = None
     if jewel_type == 'Militant Faith':
         mf_mods = parse_militant_faith_mods(jewel_string)
 
     return ParsedJewel(jewel_type,
                        seed,
                        general,
-                       mf_mods)
+                       mf_mods or [])
 
 
 def parse_jewel_mods(jewel_object: APIJewel, lut_data: LutData) -> ParsedJewel:
@@ -47,7 +47,7 @@ def parse_jewel_mods(jewel_object: APIJewel, lut_data: LutData) -> ParsedJewel:
                        seed=seed,
                        general=general,
                        mf_mods=mf_mods,
-                       socket_id=jewel_object.slotId)
+                       socket_index=jewel_object.slotId)
 
 
 def parse_jewel_type(jewel_string: str, jewel_type_map: Dict[str, int]) -> str:

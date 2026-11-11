@@ -1,8 +1,11 @@
 from dataclasses import dataclass
 from typing import Dict, List, Optional
+from numpy import inf
+from math import isclose
 
-from app.scripts.parse_tree_json.classes import Node
-
+from app.scripts.parse_data_files.classes import Node, Stat
+from app.scripts.parse_data_files.jewel_stats import JewelStats
+from app.util.utils import truncate_float
 
 @dataclass(frozen=True)
 class Vertex:
@@ -10,6 +13,8 @@ class Vertex:
     y: float
 
     def __eq__(self, value):
+        if not isinstance(value, Vertex):
+            raise TypeError
         return value.x == self.x and value.y == self.y
 
     def __sub__(self, other):
@@ -30,8 +35,25 @@ class Vertex:
 @dataclass
 class StraightEdge:
     allocated: bool
-    ends: List[Dict]
+    ends: List[Vertex]
 
+    def slope(self):
+        # use bottom extrema as 'start' node in calculations
+        # so that all slopes agree on what direction is positive
+        vert1, vert2 = (self.ends[0], self.ends[1]) if self.ends[0].y <= self.ends[1].y \
+                  else (self.ends[1], self.ends[0])
+
+        y1 = vert1.y
+        y2 = vert2.y
+        delta_y = y2 - y1
+        x1 = vert1.x
+        x2 = vert2.x
+        delta_x = x2 - x1
+
+        if isclose(delta_x, 0):
+            return inf
+
+        return truncate_float(delta_y / delta_x, 1)
 
 @dataclass
 class CurvedEdge:
@@ -46,9 +68,8 @@ class CurvedEdge:
 class DrawingRoot:
     jewel_type: Optional[str]
     jewel_id: int
-    jewel_stats: Optional[List[str]]
+    jewel_stats: JewelStats
     api_idx: int
-    jewel_coords: Vertex
     radius: int
     nodes: Dict[int, Node]
     curved_edges: Optional[List[CurvedEdge]]

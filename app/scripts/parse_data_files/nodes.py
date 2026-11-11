@@ -1,14 +1,28 @@
 import math
+from enum import Enum
 from typing import Dict, List
 
-from app.scripts.parse_tree_json.constants import TreeConstants
-from classes import Anchor, ConnectedNodes, TreeNode
+from app.scripts.parse_data_files.constants import TreeConstants
+from app.util.utils import intersection_has_any
+from classes import Anchor, ConnectedNodes, Node
 from tree_data import TREE_JSON
+
+class Tag(Enum):
+    CLUSTER = 'cluster_passive'
+    CLASS_START = 'class_start'
+    ASCENDANCY_START = 'ascendancy_start'
+    ASCENDANCY = 'ascendancy'
+    BLIGHT = 'blight'
+    MASTERY = 'mastery'
+    KEYSTONE = 'keystone'
+    NOTABLE = 'notable'
+    JEWEL_SOCKET = 'jewel_socket'
+    SMALL = 'small_passive'
 
 class TreeNodes:
 
     def __init__(self):
-        self._node_registry: Dict[int, TreeNode] | None = None
+        self._node_registry: Dict[int, Node] | None = None
         self._constants = TreeConstants()
 
     @property
@@ -16,40 +30,45 @@ class TreeNodes:
         if self._node_registry is None:
             self._build_registry()
 
-        return self._node_registry
+        return self._node_registry or {}
 
-    def get(self, node_id: int) -> TreeNode:
+    def get(self, node_id: int) -> Node:
         return self._nodes[node_id]
 
-    def get_by_name(self, node_name: str) -> TreeNode:
+    def get_by_name(self, node_name: str) -> Node:
         return list(filter(lambda n: n.name.upper() == node_name,
-                           self._nodes.values))[0]
+                           self._nodes.values()))[0]
+
+    def get_all_by_tags(self, select_tags: List[Tag]) -> Dict[int, Node]:
+
+        return {node_id: node for node_id, node in self._nodes.items() \
+                if intersection_has_any([tag.values for tag in node.tags], select_tags)}
 
     @staticmethod
-    def _get_node_tags(node: dict) -> List[str]:
+    def _get_node_tags(node: dict) -> List[Tag]:
         tags = []
 
         if not node.get('group'):
-            tags.append('cluster_passive')
+            tags.append(Tag.CLUSTER)
         if node.get('classStartIndex') is not None:
-            tags.append('class_start')
+            tags.append(Tag.CLASS_START)
         if node.get('isAscendancyStart'):
-            tags.append('ascendancy_start')
+            tags.append(Tag.ASCENDANCY_START)
         if node.get('ascendancyName') is not None:
-            tags.append('ascendancy')
+            tags.append(Tag.ASCENDANCY)
         if node.get('isBlighted'):
-            tags.append('blight')
+            tags.append(Tag.BLIGHT)
         if node.get('isMastery'):
-            tags.append('mastery')
+            tags.append(Tag.MASTERY)
         if node.get('isKeystone'):
-            tags.append('keystone')
+            tags.append(Tag.KEYSTONE)
         if node.get('isNotable'):
-            tags.append('notable')
+            tags.append(Tag.NOTABLE)
         if node.get('isJewelSocket'):
-            tags.append('jewel_socket')
+            tags.append(Tag.JEWEL_SOCKET)
 
         if len(tags) == 0 or tags == ['ascendancy']:
-            tags.append('small_passive')
+            tags.append(Tag.SMALL)
 
         return tags
 
@@ -89,12 +108,11 @@ class TreeNodes:
 
             node = nodes[key]
 
-            self._node_registry[node['skill']] = TreeNode(node_id=node['skill'],
-                                                name=node['name'],
-                                                tags=self._get_node_tags(node),
-                                                ascendancy=node.get('ascendancyName'),
-                                                stats=node.get('stats'),
-                                                reminder_text=node.get('reminderText'),
-                                                anchor=self._create_anchor(node),
-                                                connected_nodes=ConnectedNodes(path_out=node['out'],
-                                                                               path_in=node['in']))
+            self._node_registry[node['skill']] = Node(node_id=node['skill'],
+                                                      name=node['name'],
+                                                      tags=self._get_node_tags(node),
+                                                      ascendancy=node.get('ascendancyName'),
+                                                      stats=node.get('stats'),
+                                                      anchor=self._create_anchor(node),
+                                                      connected_nodes=ConnectedNodes(path_out=node['out'],
+                                                                                     path_in=node['in']))

@@ -109,7 +109,7 @@ def base_jewel_query():
                gl_.c.general_name.label('general'),
                j_.c.mf_mods,
                j_.c.drawing,
-               j_.c.socket_id,
+               j_.c.socket_index,
                sl_.c.pob_name.label('socket_name'),
                sl_.c.description.label('socket_description'),
                v_.c.nickname.label('vip'),
@@ -122,7 +122,7 @@ def base_jewel_query():
         .join(gl_, gl_.c.general_id == j_.c.general_id) \
         .join(l_, l_.c.league_id == c_.c.league_id) \
         .join(cl_, cl_.c.class_id == c_.c.class_id) \
-        .join(sl_, sl_.c.socket_id == j_.c.socket_id) \
+        .join(sl_, sl_.c.socket_index == j_.c.socket_index) \
         .join(v_, v_.c.account_name == c_.c.account_name, isouter=True) \
         
     return q

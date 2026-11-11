@@ -1,6 +1,6 @@
 import pytest
 from unittest.mock import Mock
-from app.scripts.get_jewel_effects import NodeLookup
+from app.scripts.node_lookup import NodeLookup
 
 
 @pytest.mark.parametrize('jewel_type, seed, notable, expected', [
@@ -15,7 +15,7 @@ def test_lookup_changed_node_replacements(jewel_type, seed, notable, expected):
     mock_notable = Mock(
         node_id=notable
     )
-    effect, replaced = nl.lookup_notable_non_gv(jewel_type, seed, mock_notable)
+    effect, replaced = nl._lookup_notable_non_gv(jewel_type, seed, mock_notable)
     assert replaced
     assert effect['dn'] == expected
 
@@ -29,7 +29,7 @@ def test_lookup_changed_node_additions(jewel_type, seed, notable, expected):
     mock_notable = Mock(
         node_id=notable
     )
-    effect, replaced = nl.lookup_notable_non_gv(jewel_type, seed, mock_notable)
+    effect, replaced = nl._lookup_notable_non_gv(jewel_type, seed, mock_notable)
     assert not replaced
     assert effect['sd'] == expected
 
@@ -41,7 +41,7 @@ def test_lookup_nodes_gv_header_size_3():
     node = Mock(node_id=node_id)
 
     # table = nl.build_gv_lookup_table(seed, nodes)
-    effect, replaced = nl.fast_lookup_node_gv(seed, node)
+    effect, replaced = nl._fast_lookup_node_gv(seed, node)
     assert effect['dn'] == 'Ritual of Stillness'
     assert effect['sd'] == [
         '35% increased Cold Damage',
@@ -56,7 +56,7 @@ def test_lookup_nodes_gv_header_size_2():
     seed = 100
     nodes = Mock(node_id=node_id)
 
-    effect, replaced = nl.fast_lookup_node_gv(seed, nodes)
+    effect, replaced = nl._fast_lookup_node_gv(seed, nodes)
     assert effect['dn'] == 'Lightning Damage'
     assert effect['sd'] == ['7% increased Lightning Damage']
     assert replaced
@@ -68,7 +68,7 @@ def test_lookup_nodes_gv_header_size_6():
     seed = 2274
     node = Mock(node_id=node_id)
 
-    effect, replaced = nl.fast_lookup_node_gv(seed, node)
+    effect, replaced = nl._fast_lookup_node_gv(seed, node)
     assert effect['dn'] == 'Might of the Vaal'
     assert effect['sd'] == [
         '+7% to Critical Strike Multiplier',
@@ -84,7 +84,7 @@ def test_lookup_nodes_gv_header_size_8():
     seed = 115
     node = Mock(node_id=node_id)
 
-    effect, replaced = nl.fast_lookup_node_gv(seed, node)
+    effect, replaced = nl._fast_lookup_node_gv(seed, node)
     assert effect['dn'] == 'Legacy of the Vaal'
     assert effect['sd'] == [
         '4% increased effect of Non-Curse Auras from your Skills',
@@ -101,7 +101,7 @@ def test_lookup_nodes_gv_fractional_stat():
     seed = 100
     node = Mock(node_id=node_id)
 
-    effect, replaced = nl.fast_lookup_node_gv(seed, node)
+    effect, replaced = nl._fast_lookup_node_gv(seed, node)
     assert effect['dn'] == 'Soul Worship'
     assert effect['sd'] == [
         '9% increased maximum Energy Shield',
@@ -117,7 +117,7 @@ def test_fast_lookup_node_gv_1_1():
     seed = 100
     node = Mock(node_id=node_id)
 
-    replacement_node, replaced = nl.fast_lookup_node_gv(seed, node)
+    replacement_node, replaced = nl._fast_lookup_node_gv(seed, node)
     assert replacement_node['dn'] == 'Cult of Fire'
     assert replacement_node['sd'] == [
         '+1% to maximum Fire Resistance',

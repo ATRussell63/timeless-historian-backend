@@ -9,7 +9,7 @@ class TreeConstants:
         self._orbit_radii = None
         self._jewel_slots = None
 
-    def skills_per_orbit(self, idx: int) -> Dict[int, int]:
+    def skills_per_orbit(self, idx: int) -> int:
         if self._skills_per_orbit_map is None:
             orbits_list = TREE_JSON['constants']['skillsPerOrbit']
             self._skills_per_orbit_map = {i: val for i, val in enumerate(orbits_list)}

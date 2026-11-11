@@ -1,7 +1,7 @@
-from typing import List
+from typing import List, Dict
 from sqlalchemy.sql import select, false
 from app.db import get_engine, dict_results
-from app.models import cl_, jtl_, gl_, mml_
+from app.models import cl_, jtl_, gl_, mml_, sl_
 
 
 class LutData:
@@ -13,6 +13,8 @@ class LutData:
         self._mf_mod_list = None
         self._general_list = None
         self._abyss_domain_list = None
+        self._socket_node_id_list = None
+        self._socket_to_node_map = None
 
     @property
     def class_ids(self) -> dict:
@@ -85,3 +87,19 @@ class LutData:
                 results = dict_results(results)
                 self._abyss_domain_list = [row['type_name'] for row in results]
                 return self._abyss_domain_list
+
+    @property
+    def socket_to_node_map(self) -> Dict[int, dict]:
+        if self._socket_to_node_map:
+            return self._socket_to_node_map
+
+        else:
+            with get_engine().connect() as conn:
+                results = conn.execute(select(sl_)).fetchall()
+                results = dict_results(results)
+                self._socket_to_node_map = {row['socket_id']: row for row in results}
+                return self._socket_to_node_map
+
+    @property
+    def socket_id_list(self) -> List[int]:
+        return [row['socket_id'] for row in self.socket_to_node_map.values()]

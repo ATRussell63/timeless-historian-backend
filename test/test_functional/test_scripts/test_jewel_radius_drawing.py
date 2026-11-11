@@ -7,7 +7,7 @@ from test.test_data.brother_yide_LP_13847 import LP_13847
 from test.test_data.icecrashele_EH_140320 import EH_13847
 from test.test_data.deranged_appraiser_BR_7393 import BR_7393
 from test.test_data.trk_sanctum_BR_1575 import BR_1575
-from app.scripts.drawing.jewel_radius_drawing import JewelDrawing
+from app.scripts.drawing.tree_drawing import JewelDrawing
 
 
 @pytest.fixture

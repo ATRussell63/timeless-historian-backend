@@ -190,8 +190,7 @@ class GGGApi:
         }
 
         try:
-            response = self.rate_limited_get(self.ENDPOINTS['get-items'], params)
+            return self.rate_limited_get(self.ENDPOINTS['get-items'], params)
         except HTTPError as e:
             if '403' in str(e):
                 raise PrivateAccountException(str(e))
-        return response

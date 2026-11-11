@@ -91,6 +91,5 @@ def get_data_path():
         config = get_config()
         return f'{config.DATA_DIR}/{config.LIVE_PATCH}/'
     except Exception:
-        # VSCode is so retarded but so am I so I guess we're even
         logger.error('ALARMA, THE LOG FILE IS BORKED')
         return ''
